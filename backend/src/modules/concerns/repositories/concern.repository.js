@@ -1,0 +1,2 @@
+const Concern = require('../entities/concern.entity');
+module.exports = { create: (data) => Concern.create(data), findByStudent: (student) => Concern.find({ student }).sort('-createdAt'), findByLibrary: (library) => Concern.find({ library }).populate('student', 'name mobile').sort('-createdAt'), resolve: (id, library) => Concern.findOneAndUpdate({ _id: id, library }, { status: 'RESOLVED' }, { new: true }) };
