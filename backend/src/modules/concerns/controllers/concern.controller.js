@@ -20,7 +20,8 @@ router.get('/', protect, allow('LIBRARIAN'), asyncHandler(async (req, res) => {
 }));
 
 router.patch('/:id/resolve', protect, allow('LIBRARIAN'), asyncHandler(async (req, res) => {
-  res.json(await concernService.resolve(req.params.id, req.user.libraryId));
+  const concern = await concernService.resolve(req.params.id, req.user.libraryId);
+  res.json(concern);
 }));
 
 module.exports = router;
