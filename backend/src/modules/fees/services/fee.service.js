@@ -1,4 +1,5 @@
 const HttpError = require('../../../common/exceptions/http-error');
+const redis = require('../../../config/redis');
 const { overdue } = require('../../seats/services/seat.service');
 const studentRepository = require('../../students/repositories/student.repository');
 const feeRepository = require('../repositories/fee.repository');
@@ -7,7 +8,9 @@ const record = async (libraryId, studentId, amount, paidAt, recordedBy) => {
   const student = await studentRepository.findOne({ _id: studentId, library: libraryId });
   if (!student) throw new HttpError('Student not found', 404);
 
-  return feeRepository.create({ library: libraryId, student: student._id, amount, paidAt: paidAt || new Date(), recordedBy });
+  const payment = await feeRepository.create({ library: libraryId, student: student._id, amount, paidAt: paidAt || new Date(), recordedBy });
+  await redis.del(`library:seats:${libraryId}`);
+  return payment;
 };
 
 const pending = async (libraryId) => {

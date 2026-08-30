@@ -6,6 +6,8 @@ Run MongoDB locally, update `MONGODB_URI` and `JWT_SECRET` in `.env`, then run:
 npm start
 ```
 
+Redis caching uses Upstash REST. Add `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` to `.env`. The API continues to use MongoDB if Redis is unavailable.
+
 The server starts at `http://localhost:5000`; `GET /health` confirms it is running.
 
 ## Authentication

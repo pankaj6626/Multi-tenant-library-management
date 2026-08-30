@@ -4,6 +4,7 @@ const cors = require('cors');
 const express = require('express');
 
 const connectDatabase = require('./config/database');
+const redis = require('./config/redis');
 const errorHandler = require('./common/middleware/error-handler');
 const authController = require('./modules/auth/controllers/auth.controller');
 const libraryController = require('./modules/libraries/controllers/library.controller');
@@ -43,7 +44,8 @@ app.use(`${apiPrefix}/communication`, communityController);
 
 app.use(errorHandler);
 
-connectDatabase().then(() => {
+connectDatabase().then(async () => {
+  await redis.checkConnection();
   const port = process.env.PORT || 5000;
   app.listen(port, () => console.log(`API running on port ${port}`));
 });
