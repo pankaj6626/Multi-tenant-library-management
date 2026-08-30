@@ -1,4 +1,5 @@
 const HttpError = require('../../../common/exceptions/http-error');
+const redis = require('../../../config/redis');
 const concernRepository = require('../../concerns/repositories/concern.repository');
 const feeRepository = require('../../fees/repositories/fee.repository');
 const studentRepository = require('../../students/repositories/student.repository');
@@ -12,6 +13,9 @@ const overdue = (student, payment) => ({
 });
 
 const list = async (libraryId) => {
+  const cacheKey = `library:seats:${libraryId}`;
+  const cached = await redis.get(cacheKey);
+  if (cached) return cached;
   const seats = await seatRepository.findByLibrary(libraryId);
   const studentIds = seats.flatMap((seat) => seat.assignments.map((assignment) => assignment.student._id));
 
@@ -29,7 +33,7 @@ const list = async (libraryId) => {
     }
   });
 
-  return seats.map((seat) => ({
+  const result = seats.map((seat) => ({
     ...seat.toObject(),
     assignments: seat.assignments.map((assignment) => {
       const hasOpenConcern = studentsWithOpenConcerns.has(String(assignment.student._id));
@@ -47,12 +51,18 @@ const list = async (libraryId) => {
       };
     }),
   }));
+  await redis.set(cacheKey, result, 15);
+  return result;
 };
 
-const create = (libraryId, seatNumber) => seatRepository.create({
-  library: libraryId,
-  seatNumber,
-});
+const create = async (libraryId, seatNumber) => {
+  const seat = await seatRepository.create({
+    library: libraryId,
+    seatNumber,
+  });
+  await redis.del(`library:seats:${libraryId}`);
+  return seat;
+};
 
 const assign = async (libraryId, seatId, studentId, shift) => {
   const seat = await seatRepository.findOne({ _id: seatId, library: libraryId });
@@ -66,12 +76,18 @@ const assign = async (libraryId, seatId, studentId, shift) => {
 
   await seatRepository.removeStudentAssignments(libraryId, student._id);
   seat.assignments.push({ student: student._id, shift });
-  return seat.save();
+  const result = await seat.save();
+  await redis.del(`library:seats:${libraryId}`);
+  return result;
 };
 
-const release = (libraryId, seatId, shift) => seatRepository.findOneAndUpdate(
-  { _id: seatId, library: libraryId },
-  { $pull: { assignments: { shift } } },
-);
+const release = async (libraryId, seatId, shift) => {
+  const result = await seatRepository.findOneAndUpdate(
+    { _id: seatId, library: libraryId },
+    { $pull: { assignments: { shift } } },
+  );
+  if (result) await redis.del(`library:seats:${libraryId}`);
+  return result;
+};
 
 module.exports = { list, create, assign, release, overdue };
