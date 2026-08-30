@@ -20,6 +20,59 @@ LibraryHub is a multi-library management system for administrators, librarians, 
 ## Architecture
 
 ```text
+                         ┌──────────────────────────────┐
+                         │    LIBRARY MANAGEMENT SYSTEM │
+                         └──────────────┬───────────────┘
+                                        │
+              ┌─────────────────────────┴─────────────────────────┐
+              │                                                   │
+              ▼                                                   ▼
+   ┌─────────────────────────┐                       ┌─────────────────────────┐
+   │   LIBRARY OPERATIONS    │                       │       COMMUNITY         │
+   └────────────┬────────────┘                       └────────────┬────────────┘
+                │                                                 │
+       ┌────────┼─────────┐                            ┌───────────┼───────────┐
+       │        │         │                            │           │           │
+       ▼        ▼         ▼                            ▼           ▼           ▼
+  Libraries  Students  Librarians                   Posts       Likes      Comments
+       │        │         │                            │
+       │        │         │                            ├── Content
+       │        │         │                            ├── Author
+       │        │         │                            └── Like Count
+       │        │         │
+       │        ├─────────┤
+       │        │         │
+       │        ▼         ▼
+       │      Seats      Fees
+       │        │         │
+       │        ▼         ▼
+       │  Seat Assignment  Fee History
+       │        │
+       │        ▼
+       │      Shifts
+       │
+       └────────────── Admin Approval
+
+
+                         ┌──────────────────────────────┐
+                         │        NOTICE BOARD          │
+                         └──────────────┬───────────────┘
+                                        │
+                              ┌─────────┴─────────┐
+                              │                   │
+                              ▼                   ▼
+                           Notices          Attachments
+                              │
+                              ▼
+                       Librarian Managed
+                              │
+                         ┌────┴────┐
+                         ▼         ▼
+                       Create    Remove
+
+```
+
+```text
 React + TypeScript + Vite frontend
               |
               | JSON over HTTP, Bearer JWT
