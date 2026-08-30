@@ -15,6 +15,7 @@ const libraryStudentController = require('./modules/students/controllers/library
 const seatController = require('./modules/seats/controllers/seat.controller');
 const feeController = require('./modules/fees/controllers/fee.controller');
 const concernController = require('./modules/concerns/controllers/concern.controller');
+const communityController = require('./modules/community/controllers/community.controller');
 
 require('./events/consumers/audit.consumer');
 
@@ -38,6 +39,7 @@ app.use(`${apiPrefix}/libraries/students`, libraryStudentController);
 app.use(`${apiPrefix}/seats`, seatController);
 app.use(apiPrefix, feeController);
 app.use(`${apiPrefix}/concerns`, concernController);
+app.use(`${apiPrefix}/communication`, communityController);
 
 app.use(errorHandler);
 

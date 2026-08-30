@@ -23,5 +23,8 @@ Use `POST /api/v1/auth/login` with `email`, `password`, and `libraryCode` for li
 - `GET|POST /api/v1/seats`, `POST /api/v1/seats/:id/assign`, `PATCH /api/v1/seats/:id/release`
 - `POST /api/v1/students/:id/fees`, `GET /api/v1/students/me/fees`, `GET /api/v1/fees/pending`
 - `POST /api/v1/concerns`, `GET /api/v1/concerns`, `PATCH /api/v1/concerns/:id/resolve`
+- `GET|POST /api/v1/communication/posts`, `POST /api/v1/communication/posts/:id/comments`, `PATCH /api/v1/communication/posts/:id/like`
+- `DELETE /api/v1/communication/posts/:id`, `DELETE /api/v1/communication/posts/:postId/comments/:commentId`
+- `GET|POST /api/v1/communication/notices`, `DELETE /api/v1/communication/notices/:id`
 
 Approving the first librarian automatically creates the requested number of seats. Each seat accepts one student in `SHIFT_1` and one in `SHIFT_2`. A fee is overdue when no payment has been recorded in the previous 30 days (or the student registered more than 30 days ago without a payment).
