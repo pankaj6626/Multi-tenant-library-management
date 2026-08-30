@@ -1,0 +1,7 @@
+const mongoose = require('mongoose');
+module.exports = mongoose.model('Student', new mongoose.Schema({
+  library: { type: mongoose.Schema.Types.ObjectId, ref: 'Library', required: true },
+  name: { type: String, required: true }, email: { type: String, required: true, unique: true, lowercase: true },
+  passwordHash: { type: String, required: true }, mobile: { type: String, required: true },
+  status: { type: String, enum: ['PENDING', 'APPROVED'], default: 'APPROVED' }
+}, { timestamps: true }));
