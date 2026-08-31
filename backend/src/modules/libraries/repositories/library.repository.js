@@ -1,2 +1,9 @@
-const Library = require('../entities/library.entity');
-module.exports = { create: (data) => Library.create(data), findAll: () => Library.find().sort('-createdAt'), findById: (id) => Library.findById(id), findApprovedByCode: (libraryCode) => Library.findOne({ libraryCode, status: 'APPROVED' }), save: (library) => library.save() };
+const Library = require("../entities/library.entity");
+module.exports = {
+  create: (data) => Library.create(data),
+  findAll: () => Library.find().sort("-createdAt"),
+  findById: (id) => Library.findById(id),
+  findApprovedByCode: (libraryCode) =>
+    Library.findOne({ libraryCode, status: "APPROVED" }),
+  save: (library) => library.save(),
+};

@@ -1,2 +1,22 @@
-const mongoose = require('mongoose');
-module.exports = mongoose.model('Library', new mongoose.Schema({ name: { type: String, required: true, trim: true }, country: { type: String, required: true }, city: { type: String, required: true }, address: { type: String, required: true }, pincode: { type: String, required: true }, mobile: { type: String, required: true }, email: { type: String, required: true, lowercase: true }, libraryCode: { type: String, unique: true, sparse: true }, status: { type: String, enum: ['PENDING', 'APPROVED', 'REJECTED'], default: 'PENDING' } }, { timestamps: true }));
+const mongoose = require("mongoose");
+module.exports = mongoose.model(
+  "Library",
+  new mongoose.Schema(
+    {
+      name: { type: String, required: true, trim: true },
+      country: { type: String, required: true },
+      city: { type: String, required: true },
+      address: { type: String, required: true },
+      pincode: { type: String, required: true },
+      mobile: { type: String, required: true },
+      email: { type: String, required: true, lowercase: true },
+      libraryCode: { type: String, unique: true, sparse: true },
+      status: {
+        type: String,
+        enum: ["PENDING", "APPROVED", "REJECTED"],
+        default: "PENDING",
+      },
+    },
+    { timestamps: true },
+  ),
+);

@@ -1,2 +1,10 @@
-const Student = require('../entities/student.entity');
-module.exports = { create: (data) => Student.create(data), findByEmail: (email) => Student.findOne({ email }), findById: (id) => Student.findById(id), findProfile: (id) => Student.findById(id).populate('library', 'name libraryCode'), findByLibrary: (library) => Student.find({ library }).sort('name'), findOne: (query) => Student.findOne(query) };
+const Student = require("../entities/student.entity");
+module.exports = {
+  create: (data) => Student.create(data),
+  findByEmail: (email) => Student.findOne({ email }),
+  findById: (id) => Student.findById(id),
+  findProfile: (id) =>
+    Student.findById(id).populate("library", "name libraryCode"),
+  findByLibrary: (library) => Student.find({ library }).sort("name"),
+  findOne: (query) => Student.findOne(query),
+};
