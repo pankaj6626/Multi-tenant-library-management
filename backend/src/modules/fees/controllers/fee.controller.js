@@ -1,8 +1,8 @@
-const express = require('express');
+import express from 'express';
 
-const { allow, protect } = require('../../../common/guards/auth.guard');
-const asyncHandler = require('../../../common/utils/async-handler');
-const feeService = require('../services/fee.service');
+import { allow, protect } from '../../../common/guards/auth.guard.js';
+import asyncHandler from '../../../common/utils/async-handler.js';
+import * as feeService from '../services/fee.service.js';
 
 const router = express.Router();
 
@@ -19,4 +19,4 @@ router.get('/fees/pending', protect, allow('LIBRARIAN'), asyncHandler(async (req
   res.json(await feeService.pending(req.user.libraryId));
 }));
 
-module.exports = router;
+export default router;

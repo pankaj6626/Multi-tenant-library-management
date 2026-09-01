@@ -1,10 +1,10 @@
-const HttpError = require('../../../common/exceptions/http-error');
-const { hashPassword } = require('../../../common/utils/security');
-const { publish } = require('../../../events/publishers/event.publisher');
-const events = require('../../../events/event-types/domain-events');
-const libraryService = require('../../libraries/services/library.service');
-const seatRepository = require('../../seats/repositories/seat.repository');
-const librarianRepository = require('../repositories/librarian.repository');
+import HttpError from '../../../common/exceptions/http-error.js';
+import { hashPassword } from '../../../common/utils/security.js';
+import { publish } from '../../../events/publishers/event.publisher.js';
+import events from '../../../events/event-types/domain-events.js';
+import * as libraryService from '../../libraries/services/library.service.js';
+import * as seatRepository from '../../seats/repositories/seat.repository.js';
+import * as librarianRepository from '../repositories/librarian.repository.js';
 
 const register = async ({ libraryCode, name, email, password, mobile, totalSeats }) => {
   const library = await libraryService.findApprovedByCode(libraryCode);
@@ -30,4 +30,6 @@ const approve = async (librarianId) => {
   return librarian;
 };
 
-module.exports = { register, approve, findAll: librarianRepository.findAll, findByEmail: librarianRepository.findByEmail };
+export { register, approve };
+export const findAll = librarianRepository.findAll;
+export const findByEmail = librarianRepository.findByEmail;

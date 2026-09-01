@@ -1,5 +1,5 @@
-const Student = require("../entities/student.entity");
-module.exports = {
+import Student from '../entities/student.entity.js';
+export default {
   create: (data) => Student.create(data),
   findByEmail: (email) => Student.findOne({ email }),
   findById: (id) => Student.findById(id),

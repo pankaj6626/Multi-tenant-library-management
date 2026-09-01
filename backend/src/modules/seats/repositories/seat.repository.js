@@ -1,5 +1,5 @@
-const Seat = require("../entities/seat.entity");
-module.exports = {
+import Seat from '../entities/seat.entity.js';
+export default {
   countByLibrary: (library) => Seat.countDocuments({ library }),
   create: (data) => Seat.create(data),
   createMany: (items) => Seat.insertMany(items),

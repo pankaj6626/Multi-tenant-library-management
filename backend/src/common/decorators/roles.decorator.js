@@ -1,2 +1,2 @@
-const { allow } = require('../guards/auth.guard');
-module.exports = (...roles) => allow(...roles);
+import { allow } from '../guards/auth.guard.js';
+export default (...roles) => allow(...roles);

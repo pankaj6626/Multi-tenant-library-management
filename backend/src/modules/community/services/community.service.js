@@ -1,6 +1,6 @@
-const HttpError = require('../../../common/exceptions/http-error');
-const redis = require('../../../config/redis');
-const repository = require('../repositories/community.repository');
+import HttpError from '../../../common/exceptions/http-error.js';
+import redis from '../../../config/redis.js';
+import * as repository from '../repositories/community.repository.js';
 
 const findPosts = async (library, studentId) => {
   const key = `community:posts:${library}`;
@@ -76,4 +76,4 @@ const deleteNotice = async (library, noticeId) => {
   await redis.del(`community:notices:${library}`);
 };
 
-module.exports = { findPosts, createPost, addComment, toggleLike, deletePost, deleteComment, findNotices, createNotice, deleteNotice };
+export { findPosts, createPost, addComment, toggleLike, deletePost, deleteComment, findNotices, createNotice, deleteNotice };

@@ -1,8 +1,8 @@
-const HttpError = require('../../../common/exceptions/http-error');
-const { signToken, verifyPassword } = require('../../../common/utils/security');
-const libraryService = require('../../libraries/services/library.service');
-const librarianService = require('../../librarians/services/librarian.service');
-const studentService = require('../../students/services/student.service');
+import HttpError from '../../../common/exceptions/http-error.js';
+import { signToken, verifyPassword } from '../../../common/utils/security.js';
+import * as libraryService from '../../libraries/services/library.service.js';
+import * as librarianService from '../../librarians/services/librarian.service.js';
+import * as studentService from '../../students/services/student.service.js';
 
 const login = async ({ email, password, libraryCode }) => {
   if (email === process.env.ADMIN_EMAIL && password === process.env.ADMIN_PASSWORD) {
@@ -27,4 +27,4 @@ const login = async ({ email, password, libraryCode }) => {
 
 const refresh = (user) => ({ token: signToken(user) });
 
-module.exports = { login, refresh };
+export { login, refresh };

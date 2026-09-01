@@ -1,5 +1,5 @@
-const Librarian = require("../entities/librarian.entity");
-module.exports = {
+import Librarian from '../entities/librarian.entity.js';
+export default {
   create: (data) => Librarian.create(data),
   findByEmail: (email) => Librarian.findOne({ email }),
   findById: (id) => Librarian.findById(id),

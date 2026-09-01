@@ -1,8 +1,8 @@
-const express = require('express');
+import express from 'express';
 
-const { protect } = require('../../../common/guards/auth.guard');
-const asyncHandler = require('../../../common/utils/async-handler');
-const authService = require('../services/auth.service');
+import { protect } from '../../../common/guards/auth.guard.js';
+import asyncHandler from '../../../common/utils/async-handler.js';
+import * as authService from '../services/auth.service.js';
 
 const router = express.Router();
 
@@ -19,4 +19,4 @@ router.post('/logout', protect, (_req, res) => {
   res.status(204).end();
 });
 
-module.exports = router;
+export default router;

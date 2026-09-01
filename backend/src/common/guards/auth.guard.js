@@ -1,4 +1,4 @@
-const { verifyToken } = require("../utils/security");
+import { verifyToken } from '../utils/security.js';
 const protect = (req, res, next) => {
   try {
     const token = req.headers.authorization?.replace("Bearer ", "");
@@ -16,4 +16,4 @@ const allow =
     roles.includes(req.user.role)
       ? next()
       : res.status(403).json({ message: "Access denied" });
-module.exports = { protect, allow };
+export { protect, allow };

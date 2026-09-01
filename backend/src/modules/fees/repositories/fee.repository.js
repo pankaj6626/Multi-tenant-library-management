@@ -1,5 +1,5 @@
-const FeePayment = require("../entities/fee-payment.entity");
-module.exports = {
+import FeePayment from '../entities/fee-payment.entity.js';
+export default {
   create: (data) => FeePayment.create(data),
   findByStudent: (student) => FeePayment.find({ student }).sort("-paidAt"),
   findByLibrary: (library) => FeePayment.find({ library }).sort("-paidAt"),

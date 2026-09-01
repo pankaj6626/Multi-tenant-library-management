@@ -1,10 +1,10 @@
-const { hashPassword } = require('../../../common/utils/security');
-const redis = require('../../../config/redis');
-const concernRepository = require('../../concerns/repositories/concern.repository');
-const feeRepository = require('../../fees/repositories/fee.repository');
-const libraryService = require('../../libraries/services/library.service');
-const seatRepository = require('../../seats/repositories/seat.repository');
-const studentRepository = require('../repositories/student.repository');
+import { hashPassword } from '../../../common/utils/security.js';
+import redis from '../../../config/redis.js';
+import * as concernRepository from '../../concerns/repositories/concern.repository.js';
+import * as feeRepository from '../../fees/repositories/fee.repository.js';
+import * as libraryService from '../../libraries/services/library.service.js';
+import * as seatRepository from '../../seats/repositories/seat.repository.js';
+import * as studentRepository from '../repositories/student.repository.js';
 
 const register = async ({ libraryCode, name, email, password, mobile }) => {
   const library = await libraryService.findApprovedByCode(libraryCode);
@@ -33,4 +33,6 @@ const profile = async (studentId) => {
   return { student, seat, payments, concerns };
 };
 
-module.exports = { register, profile, findByLibrary, findByEmail: studentRepository.findByEmail, findOne: studentRepository.findOne };
+export { register, profile, findByLibrary };
+export const findByEmail = studentRepository.findByEmail;
+export const findOne = studentRepository.findOne;

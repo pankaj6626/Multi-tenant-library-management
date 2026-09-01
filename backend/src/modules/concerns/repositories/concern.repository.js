@@ -1,4 +1,4 @@
-const Concern = require('../entities/concern.entity');
+import Concern from '../entities/concern.entity.js';
 
 const create = (data) => Concern.create(data);
 
@@ -19,4 +19,4 @@ const resolve = (concernId, libraryId) => Concern.findOneAndUpdate(
   { new: true },
 );
 
-module.exports = { create, findByStudent, findByLibrary, findOpenByStudents, resolve };
+export { create, findByStudent, findByLibrary, findOpenByStudents, resolve };

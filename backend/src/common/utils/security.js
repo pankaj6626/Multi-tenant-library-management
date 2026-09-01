@@ -1,4 +1,4 @@
-const crypto = require("crypto");
+import crypto from 'crypto';
 const base64url = (value) => Buffer.from(value).toString("base64url");
 const hashPassword = (password) => {
   const salt = crypto.randomBytes(16).toString("hex");
@@ -34,4 +34,4 @@ const verifyToken = (token) => {
   if (payload.exp < Date.now()) throw new Error("Token expired");
   return payload;
 };
-module.exports = { hashPassword, verifyPassword, signToken, verifyToken };
+export { hashPassword, verifyPassword, signToken, verifyToken };

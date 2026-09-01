@@ -1,6 +1,6 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
-module.exports = mongoose.model('Notice', new mongoose.Schema({
+export default mongoose.model('Notice', new mongoose.Schema({
   library: { type: mongoose.Schema.Types.ObjectId, ref: 'Library', required: true },
   author: { type: mongoose.Schema.Types.ObjectId, ref: 'Librarian', required: true },
   title: { type: String, required: true, trim: true, maxlength: 120 },

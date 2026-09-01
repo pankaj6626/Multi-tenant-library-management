@@ -1,4 +1,7 @@
-const { Redis } = require('@upstash/redis');
+import dotenv from 'dotenv';
+import { Redis } from '@upstash/redis';
+
+dotenv.config();
 
 const redis = process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
   ? new Redis({
@@ -52,4 +55,4 @@ const del = async (...keys) => {
   }
 };
 
-module.exports = { get, set, del, checkConnection, enabled: Boolean(redis) };
+export default { get, set, del, checkConnection, enabled: Boolean(redis) };

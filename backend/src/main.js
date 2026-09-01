@@ -1,24 +1,24 @@
-require('dotenv').config();
+import 'dotenv/config';
 
-const cors = require('cors');
-const express = require('express');
+import cors from 'cors';
+import express from 'express';
 
-const connectDatabase = require('./config/database');
-const redis = require('./config/redis');
-const errorHandler = require('./common/middleware/error-handler');
-const authController = require('./modules/auth/controllers/auth.controller');
-const libraryController = require('./modules/libraries/controllers/library.controller');
-const adminLibraryController = require('./modules/libraries/controllers/admin-library.controller');
-const librarianController = require('./modules/librarians/controllers/librarian.controller');
-const adminLibrarianController = require('./modules/librarians/controllers/admin-librarian.controller');
-const studentController = require('./modules/students/controllers/student.controller');
-const libraryStudentController = require('./modules/students/controllers/library-student.controller');
-const seatController = require('./modules/seats/controllers/seat.controller');
-const feeController = require('./modules/fees/controllers/fee.controller');
-const concernController = require('./modules/concerns/controllers/concern.controller');
-const communityController = require('./modules/community/controllers/community.controller');
+import connectDatabase from './config/database.js';
+import redis from './config/redis.js';
+import errorHandler from './common/middleware/error-handler.js';
+import authController from './modules/auth/controllers/auth.controller.js';
+import libraryController from './modules/libraries/controllers/library.controller.js';
+import adminLibraryController from './modules/libraries/controllers/admin-library.controller.js';
+import librarianController from './modules/librarians/controllers/librarian.controller.js';
+import adminLibrarianController from './modules/librarians/controllers/admin-librarian.controller.js';
+import studentController from './modules/students/controllers/student.controller.js';
+import libraryStudentController from './modules/students/controllers/library-student.controller.js';
+import seatController from './modules/seats/controllers/seat.controller.js';
+import feeController from './modules/fees/controllers/fee.controller.js';
+import concernController from './modules/concerns/controllers/concern.controller.js';
+import communityController from './modules/community/controllers/community.controller.js';
 
-require('./events/consumers/audit.consumer');
+import './events/consumers/audit.consumer.js';
 
 const app = express();
 const apiPrefix = '/api/v1';

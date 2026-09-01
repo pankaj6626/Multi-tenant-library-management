@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from 'mongoose';
 const assignment = new mongoose.Schema(
   {
     shift: { type: String, enum: ["SHIFT_1", "SHIFT_2"], required: true },
@@ -10,7 +10,7 @@ const assignment = new mongoose.Schema(
   },
   { _id: false },
 );
-module.exports = mongoose.model(
+export default mongoose.model(
   "Seat",
   new mongoose.Schema(
     {

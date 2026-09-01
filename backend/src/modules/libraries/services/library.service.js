@@ -1,7 +1,7 @@
-const HttpError = require('../../../common/exceptions/http-error');
-const { publish } = require('../../../events/publishers/event.publisher');
-const events = require('../../../events/event-types/domain-events');
-const libraryRepository = require('../repositories/library.repository');
+import HttpError from '../../../common/exceptions/http-error.js';
+import { publish } from '../../../events/publishers/event.publisher.js';
+import events from '../../../events/event-types/domain-events.js';
+import * as libraryRepository from '../repositories/library.repository.js';
 
 const create = async (libraryData) => {
   const library = await libraryRepository.create(libraryData);
@@ -36,4 +36,5 @@ const reject = async (libraryId) => {
   return library;
 };
 
-module.exports = { create, findApprovedByCode, approve, reject, findAll: libraryRepository.findAll };
+export { create, findApprovedByCode, approve, reject };
+export const findAll = libraryRepository.findAll;

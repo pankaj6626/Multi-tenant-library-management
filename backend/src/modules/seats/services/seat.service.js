@@ -1,9 +1,9 @@
-const HttpError = require('../../../common/exceptions/http-error');
-const redis = require('../../../config/redis');
-const concernRepository = require('../../concerns/repositories/concern.repository');
-const feeRepository = require('../../fees/repositories/fee.repository');
-const studentRepository = require('../../students/repositories/student.repository');
-const seatRepository = require('../repositories/seat.repository');
+import HttpError from '../../../common/exceptions/http-error.js';
+import redis from '../../../config/redis.js';
+import * as concernRepository from '../../concerns/repositories/concern.repository.js';
+import * as feeRepository from '../../fees/repositories/fee.repository.js';
+import * as studentRepository from '../../students/repositories/student.repository.js';
+import * as seatRepository from '../repositories/seat.repository.js';
 
 const overdue = (student, payment) => ({
   status: (payment ? payment.paidAt : student.createdAt) < new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
@@ -90,4 +90,4 @@ const release = async (libraryId, seatId, shift) => {
   return result;
 };
 
-module.exports = { list, create, assign, release, overdue };
+export { list, create, assign, release, overdue };

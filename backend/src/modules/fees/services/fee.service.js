@@ -1,8 +1,8 @@
-const HttpError = require("../../../common/exceptions/http-error");
-const redis = require("../../../config/redis");
-const { overdue } = require("../../seats/services/seat.service");
-const studentRepository = require("../../students/repositories/student.repository");
-const feeRepository = require("../repositories/fee.repository");
+import HttpError from '../../../common/exceptions/http-error.js';
+import * as redis from '../../../config/redis.js';
+import { overdue } from '../../seats/services/seat.service.js';
+import * as studentRepository from '../../students/repositories/student.repository.js';
+import * as feeRepository from '../repositories/fee.repository.js';
 
 const record = async (libraryId, studentId, amount, paidAt, recordedBy) => {
   const student = await studentRepository.findOne({
@@ -44,4 +44,5 @@ const pending = async (libraryId) => {
     }));
 };
 
-module.exports = { record, pending, history: feeRepository.findByStudent };
+export { record, pending };
+export const history = feeRepository.findByStudent;

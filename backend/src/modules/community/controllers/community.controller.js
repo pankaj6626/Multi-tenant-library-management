@@ -1,8 +1,8 @@
-const express = require('express');
+import express from 'express';
 
-const { allow, protect } = require('../../../common/guards/auth.guard');
-const asyncHandler = require('../../../common/utils/async-handler');
-const service = require('../services/community.service');
+import { allow, protect } from '../../../common/guards/auth.guard.js';
+import asyncHandler from '../../../common/utils/async-handler.js';
+import * as service from '../services/community.service.js';
 
 const router = express.Router();
 router.use(protect);
@@ -39,4 +39,4 @@ router.delete('/notices/:id', allow('LIBRARIAN'), asyncHandler(async (req, res) 
   res.status(204).send();
 }));
 
-module.exports = router;
+export default router;

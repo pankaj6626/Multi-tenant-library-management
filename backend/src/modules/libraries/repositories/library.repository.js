@@ -1,5 +1,5 @@
-const Library = require("../entities/library.entity");
-module.exports = {
+import Library from '../entities/library.entity.js';
+export default {
   create: (data) => Library.create(data),
   findAll: () => Library.find().sort("-createdAt"),
   findById: (id) => Library.findById(id),
