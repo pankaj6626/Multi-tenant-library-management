@@ -17,4 +17,9 @@ router.patch('/:id/approve', asyncHandler(async (req, res) => {
   res.json({ message: 'Librarian approved and seats created', librarian });
 }));
 
+router.patch('/:id/reject', asyncHandler(async (req, res) => {
+  const librarian = await librarianService.reject(req.params.id);
+  res.json({ message: 'Librarian rejected', librarian });
+}));
+
 export default router;

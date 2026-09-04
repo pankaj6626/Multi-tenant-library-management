@@ -1,9 +1,9 @@
 import HttpError from '../../../common/exceptions/http-error.js';
 import redis from '../../../config/redis.js';
 import * as concernRepository from '../../concerns/repositories/concern.repository.js';
-import * as feeRepository from '../../fees/repositories/fee.repository.js';
-import * as studentRepository from '../../students/repositories/student.repository.js';
-import * as seatRepository from '../repositories/seat.repository.js';
+import feeRepository from '../../fees/repositories/fee.repository.js';
+import studentRepository from '../../students/repositories/student.repository.js';
+import seatRepository from '../repositories/seat.repository.js';
 
 const overdue = (student, payment) => ({
   status: (payment ? payment.paidAt : student.createdAt) < new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)

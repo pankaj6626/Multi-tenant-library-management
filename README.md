@@ -219,6 +219,7 @@ Admin login uses `ADMIN_EMAIL` and `ADMIN_PASSWORD` and does not require a libra
 | POST | `/librarians/register` | Public | Register a librarian for an approved library |
 | GET | `/admin/librarians` | Admin | List librarian requests |
 | PATCH | `/admin/librarians/:id/approve` | Admin | Approve a librarian and create seats |
+| PATCH | `/admin/librarians/:id/reject` | Admin | Reject a librarian request |
 
 Approving the first librarian creates the requested number of seats for that library. Approval also generates the library code used during student and librarian login.
 

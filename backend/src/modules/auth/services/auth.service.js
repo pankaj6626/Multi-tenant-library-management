@@ -16,6 +16,7 @@ const login = async ({ email, password, libraryCode }) => {
 
   const library = await libraryService.findApprovedByCode(libraryCode);
   if (String(library._id) !== String(user.library)) throw new HttpError('Valid libraryCode is required', 401);
+  if (user.status === 'REJECTED') throw new HttpError('Your registration request has been rejected', 403);
   if (user.status !== 'APPROVED') throw new HttpError('Your registration is awaiting approval', 403);
 
   return {

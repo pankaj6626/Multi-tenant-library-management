@@ -3,8 +3,8 @@ import { hashPassword } from '../../../common/utils/security.js';
 import { publish } from '../../../events/publishers/event.publisher.js';
 import events from '../../../events/event-types/domain-events.js';
 import * as libraryService from '../../libraries/services/library.service.js';
-import * as seatRepository from '../../seats/repositories/seat.repository.js';
-import * as librarianRepository from '../repositories/librarian.repository.js';
+import seatRepository from '../../seats/repositories/seat.repository.js';
+import librarianRepository from '../repositories/librarian.repository.js';
 
 const register = async ({ libraryCode, name, email, password, mobile, totalSeats }) => {
   const library = await libraryService.findApprovedByCode(libraryCode);
@@ -30,6 +30,16 @@ const approve = async (librarianId) => {
   return librarian;
 };
 
-export { register, approve };
+const reject = async (librarianId) => {
+  const librarian = await librarianRepository.findById(librarianId);
+  if (!librarian) throw new HttpError('Librarian not found', 404);
+
+  librarian.status = 'REJECTED';
+  await librarianRepository.save(librarian);
+  publish(events.LIBRARIAN_REJECTED, { librarianId: librarian._id });
+  return librarian;
+};
+
+export { register, approve, reject };
 export const findAll = librarianRepository.findAll;
 export const findByEmail = librarianRepository.findByEmail;

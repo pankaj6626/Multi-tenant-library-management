@@ -1,10 +1,10 @@
 import { hashPassword } from '../../../common/utils/security.js';
 import redis from '../../../config/redis.js';
 import * as concernRepository from '../../concerns/repositories/concern.repository.js';
-import * as feeRepository from '../../fees/repositories/fee.repository.js';
+import feeRepository from '../../fees/repositories/fee.repository.js';
 import * as libraryService from '../../libraries/services/library.service.js';
-import * as seatRepository from '../../seats/repositories/seat.repository.js';
-import * as studentRepository from '../repositories/student.repository.js';
+import seatRepository from '../../seats/repositories/seat.repository.js';
+import studentRepository from '../repositories/student.repository.js';
 
 const register = async ({ libraryCode, name, email, password, mobile }) => {
   const library = await libraryService.findApprovedByCode(libraryCode);

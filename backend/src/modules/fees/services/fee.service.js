@@ -1,8 +1,8 @@
 import HttpError from '../../../common/exceptions/http-error.js';
-import * as redis from '../../../config/redis.js';
+import redis from '../../../config/redis.js';
 import { overdue } from '../../seats/services/seat.service.js';
-import * as studentRepository from '../../students/repositories/student.repository.js';
-import * as feeRepository from '../repositories/fee.repository.js';
+import studentRepository from '../../students/repositories/student.repository.js';
+import feeRepository from '../repositories/fee.repository.js';
 
 const record = async (libraryId, studentId, amount, paidAt, recordedBy) => {
   const student = await studentRepository.findOne({

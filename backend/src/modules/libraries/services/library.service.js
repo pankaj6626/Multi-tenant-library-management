@@ -1,7 +1,7 @@
 import HttpError from '../../../common/exceptions/http-error.js';
 import { publish } from '../../../events/publishers/event.publisher.js';
 import events from '../../../events/event-types/domain-events.js';
-import * as libraryRepository from '../repositories/library.repository.js';
+import libraryRepository from '../repositories/library.repository.js';
 
 const create = async (libraryData) => {
   const library = await libraryRepository.create(libraryData);
