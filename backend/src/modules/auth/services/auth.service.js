@@ -1,31 +1,46 @@
 import HttpError from '../../../common/exceptions/http-error.js';
-import { signToken, verifyPassword } from '../../../common/utils/security.js';
+import { createAdminAuthenticator, createMemberAuthenticator } from './authenticator.service.js';
+import { createAccessToken, createRefreshToken } from './token.service.js';
 import * as libraryService from '../../libraries/services/library.service.js';
 import * as librarianService from '../../librarians/services/librarian.service.js';
 import * as studentService from '../../students/services/student.service.js';
 
-const login = async ({ email, password, libraryCode }) => {
-  if (email === process.env.ADMIN_EMAIL && password === process.env.ADMIN_PASSWORD) {
-    return { token: signToken({ id: 'admin', role: 'ADMIN' }), role: 'ADMIN' };
+const adminAuthenticator = createAdminAuthenticator({
+  email: process.env.ADMIN_EMAIL,
+  password: process.env.ADMIN_PASSWORD,
+});
+
+const librarianAuthenticator = createMemberAuthenticator({
+  role: 'LIBRARIAN',
+  findByEmail: librarianService.findByEmail,
+  findApprovedByCode: libraryService.findApprovedByCode,
+});
+
+const studentAuthenticator = createMemberAuthenticator({
+  role: 'STUDENT',
+  findByEmail: studentService.findByEmail,
+  findApprovedByCode: libraryService.findApprovedByCode,
+});
+
+const login = async (credentials) => {
+  const admin = adminAuthenticator.authenticate(credentials);
+  if (admin) return { token: createAccessToken(admin), role: admin.role };
+
+  const member = await librarianAuthenticator.authenticate(credentials)
+    || await studentAuthenticator.authenticate(credentials);
+  if (!member) {
+    throw new HttpError('Invalid email or password', 401);
   }
 
-  let user = await librarianService.findByEmail(email);
-  let role = 'LIBRARIAN';
-  if (!user) { user = await studentService.findByEmail(email); role = 'STUDENT'; }
-  if (!user || !verifyPassword(password, user.passwordHash)) throw new HttpError('Invalid email or password', 401);
-
-  const library = await libraryService.findApprovedByCode(libraryCode);
-  if (String(library._id) !== String(user.library)) throw new HttpError('Valid libraryCode is required', 401);
-  if (user.status === 'REJECTED') throw new HttpError('Your registration request has been rejected', 403);
-  if (user.status !== 'APPROVED') throw new HttpError('Your registration is awaiting approval', 403);
+  const { user, ...tokenPayload } = member;
 
   return {
-    token: signToken({ id: String(user._id), role, libraryId: String(user.library), libraryCode }),
-    role,
-    user: { id: user._id, name: user.name, email: user.email },
+    token: createAccessToken(tokenPayload),
+    role: member.role,
+    user: member.user,
   };
 };
 
-const refresh = (user) => ({ token: signToken(user) });
+const refresh = (user) => createRefreshToken(user);
 
 export { login, refresh };
