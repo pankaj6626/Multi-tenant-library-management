@@ -10,4 +10,8 @@ router.get('/', protect, allow('LIBRARIAN'), asyncHandler(async (req, res) => {
   res.json(await studentService.findByLibrary(req.user.libraryId));
 }));
 
+router.get('/history', protect, allow('LIBRARIAN'), asyncHandler(async (req, res) => {
+  res.json(await studentService.findHistoryByLibrary(req.user.libraryId));
+}));
+
 export default router;

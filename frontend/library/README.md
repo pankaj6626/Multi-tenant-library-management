@@ -1,4 +1,34 @@
-# React + TypeScript + Vite
+# LibraryHub Frontend
+
+React + TypeScript + Vite frontend for the LibraryHub library management system.
+
+## Main Features
+
+- Admin approval dashboard for libraries and librarians.
+- Librarian dashboard with four footer sections: Seat Map, Assign Seats, Record Payment, and Concerns.
+- Librarian seat release action with student history records displayed below assignment controls.
+- Student dashboard with seat and payment information.
+- Community navigation and concern creation are available to students after a seat has been assigned.
+- Responsive mobile layouts for dashboard panels, forms, tables, and footer navigation.
+- Login form uses email, password, and library code for librarians and students; admin login does not require a library code.
+
+## Development
+
+```bash
+npm install
+npm run dev
+```
+
+The Vite development server runs at `http://localhost:5173`. API requests are proxied to the backend at `http://localhost:5000`.
+
+```bash
+npm run build
+npm run lint
+```
+
+The production API URL can be configured with `VITE_API_URL`.
+
+## Original Vite Notes
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 

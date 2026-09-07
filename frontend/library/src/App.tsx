@@ -612,19 +612,22 @@ function Librarian({ token }: { token: string }) {
   const [seats, setSeats] = useState<any[]>([]),
     [students, setStudents] = useState<any[]>([]),
     [concerns, setConcerns] = useState<any[]>([]),
+    [studentHistory, setStudentHistory] = useState<any[]>([]),
     [error, setError] = useState(""),
     [assign, setAssign] = useState<Values>({}),
     [fee, setFee] = useState<Values>({});
   const load = async () => {
     try {
-      const [a, b, c] = await Promise.all([
+      const [a, b, c, d] = await Promise.all([
         api("/seats", "GET", undefined, token),
         api("/libraries/students", "GET", undefined, token),
         api("/concerns", "GET", undefined, token),
+        api("/libraries/students/history", "GET", undefined, token),
       ]);
       setSeats(a);
       setStudents(b);
       setConcerns(c);
+      setStudentHistory(d);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unable to load");
     }
@@ -673,8 +676,8 @@ function Librarian({ token }: { token: string }) {
               </div>
               {s.assignments.length ? (
                 s.assignments.map((a: any) => (
-                  <small key={a.shift}>
-                    {a.shift.replace("_", " ")} · {a.student.name}{" "}
+                  <small className="seat-assignment" key={a.shift}>
+                    <span>{a.shift.replace("_", " ")} · {a.student.name}</span>{" "}
                     {a.hasOpenConcern ? (
                       <span
                         className="raised-hand"
@@ -688,6 +691,21 @@ function Librarian({ token }: { token: string }) {
                     ) : (
                       "🟢"
                     )}
+                    <button
+                      className="release-action"
+                      title="Release student"
+                      aria-label={`Release ${a.student.name}`}
+                      onClick={async () => {
+                        try {
+                          await api(`/seats/${s._id}/release`, "PATCH", { shift: a.shift }, token);
+                          load();
+                        } catch (x) {
+                          setError(x instanceof Error ? x.message : "Could not release student");
+                        }
+                      }}
+                    >
+                      ×
+                    </button>
                   </small>
                 ))
               ) : (
@@ -742,6 +760,19 @@ function Librarian({ token }: { token: string }) {
               Assign student <span>→</span>
             </button>
           </form>
+          <div className="student-history">
+            <PanelHeading title="Student history" meta={`${studentHistory.length} former students`} />
+            <Table
+              heads={["Name", "Email", "Mobile", "Joined", "Left"]}
+              rows={studentHistory.map((entry) => [
+                entry.name,
+                entry.email,
+                entry.mobile,
+                new Date(entry.joinedAt).toLocaleDateString(),
+                new Date(entry.leftAt).toLocaleDateString(),
+              ])}
+            />
+          </div>
       </section>}
       {activeSection === "payment" && <section className="panel librarian-panel">
           <PanelHeading title="Record payment" meta="Offline entry" />

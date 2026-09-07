@@ -1,6 +1,6 @@
 import HttpError from '../../../common/exceptions/http-error.js';
 
-const createSeatAssignmentService = ({ seatRepository, studentRepository, seatCache }) => {
+const createSeatAssignmentService = ({ seatRepository, studentRepository, studentHistoryRepository, seatCache }) => {
   const assign = async (libraryId, seatId, studentId, shift) => {
     const seat = await seatRepository.findOne({ _id: seatId, library: libraryId });
     const student = await studentRepository.findOne({ _id: studentId, library: libraryId });
@@ -19,6 +19,23 @@ const createSeatAssignmentService = ({ seatRepository, studentRepository, seatCa
   };
 
   const release = async (libraryId, seatId, shift) => {
+    const seat = await seatRepository.findOne({ _id: seatId, library: libraryId });
+    const assignment = seat?.assignments.find((item) => item.shift === shift);
+    if (assignment) {
+      const student = await studentRepository.findOne({ _id: assignment.student, library: libraryId });
+      if (student) {
+        await studentHistoryRepository.create({
+          library: libraryId,
+          student: student._id,
+          name: student.name,
+          email: student.email,
+          mobile: student.mobile,
+          joinedAt: student.createdAt,
+          leftAt: new Date(),
+        });
+      }
+    }
+
     const result = await seatRepository.findOneAndUpdate(
       { _id: seatId, library: libraryId },
       { $pull: { assignments: { shift } } },

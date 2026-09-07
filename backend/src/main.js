@@ -31,12 +31,12 @@ app.get('/health', (_req, res) => {
 });
 
 app.use(`${apiPrefix}/auth`, authController);
+app.use(`${apiPrefix}/libraries/students`, libraryStudentController);
 app.use(`${apiPrefix}/libraries`, libraryController);
 app.use(`${apiPrefix}/admin/libraries`, adminLibraryController);
 app.use(`${apiPrefix}/librarians`, librarianController);
 app.use(`${apiPrefix}/admin/librarians`, adminLibrarianController);
 app.use(`${apiPrefix}/students`, studentController);
-app.use(`${apiPrefix}/libraries/students`, libraryStudentController);
 app.use(`${apiPrefix}/seats`, seatController);
 app.use(apiPrefix, feeController);
 app.use(`${apiPrefix}/concerns`, concernController);

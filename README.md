@@ -221,7 +221,7 @@ Admin login uses `ADMIN_EMAIL` and `ADMIN_PASSWORD` and does not require a libra
 | PATCH | `/admin/librarians/:id/approve` | Admin | Approve a librarian and create seats |
 | PATCH | `/admin/librarians/:id/reject` | Admin | Reject a librarian request |
 
-Approving the first librarian creates the requested number of seats for that library. Approval also generates the library code used during student and librarian login.
+Approving the first librarian creates the requested number of seats for that library. Approval also generates the library code used when students and librarians register.
 
 ### Students
 
@@ -230,6 +230,7 @@ Approving the first librarian creates the requested number of seats for that lib
 | POST | `/students/register` | Public | Register a student |
 | GET | `/students/me` | Student | Get profile, seat, payments, and concerns |
 | GET | `/libraries/students` | Librarian | List students in the librarian's library |
+| GET | `/libraries/students/history` | Librarian | View students who previously left the library |
 
 ### Seats
 
@@ -238,9 +239,11 @@ Approving the first librarian creates the requested number of seats for that lib
 | GET | `/seats` | Librarian | Get the library seat map |
 | POST | `/seats` | Librarian | Create a seat |
 | POST | `/seats/:id/assign` | Librarian | Assign a student to a shift |
-| PATCH | `/seats/:id/release` | Librarian | Release a shift assignment |
+| PATCH | `/seats/:id/release` | Librarian | Release a shift assignment and record student history |
 
 Each seat supports one `SHIFT_1` assignment and one `SHIFT_2` assignment. A student is removed from previous assignments before a new assignment is saved.
+
+When a librarian releases a student, the backend stores a `StudentHistory` document containing the library, student ID, name, email, mobile number, joining date, and leaving date. The librarian can view these records in the Assign Seats section of the dashboard.
 
 ### Fees
 
@@ -278,7 +281,7 @@ The route prefix remains `/communication` for API compatibility, while the sourc
 | POST | `/communication/notices` | Librarian | Publish a notice |
 | DELETE | `/communication/notices/:id` | Librarian | Remove a notice |
 
-All community queries include the authenticated user's `libraryId`, preventing cross-library content access.
+All community queries include the authenticated user's `libraryId`, preventing cross-library content access. Students must also have an assigned seat before they can access community posts, notices, comments, likes, or concern creation. Librarians are unaffected.
 
 ## Redis Caching
 
@@ -312,7 +315,8 @@ The frontend is a single React + TypeScript + Vite application. `App.tsx` contai
 - Public portal and role registration forms
 - Login and logout flow
 - Admin approval dashboard
-- Librarian dashboard with seats, students, fees, concerns, and raised hands
+- Librarian dashboard with summary statistics and four footer sections: Seat Map, Assign Seats, Record Payment, and Concerns
+- Seat release controls and student history table for former students
 - Student dashboard with seat, payment history, and concern form
 - Dedicated Community page with posts, comments, likes, moderation, and notices
 - Persistent light/dark theme using `localStorage`
@@ -337,7 +341,7 @@ JWT payloads contain the authenticated user's ID, role, library ID, and library 
 |---|---|
 | Admin | Approve/reject libraries and librarians |
 | Librarian | Manage seats, students, payments, concerns, community moderation, and notices |
-| Student | View personal data, raise concerns, create posts, comment, and like |
+| Student | View personal data; access concerns and community after seat assignment |
 
 Send the token as:
 
@@ -356,7 +360,16 @@ Every library-scoped operation must use `req.user.libraryId` rather than a libra
 3. Register a librarian with the generated library code.
 4. Admin approves the librarian.
 5. The requested seats are created automatically.
-6. Students register and log in with the same library code.
+6. Students register with the library code and later log in with only their email and password.
+
+### Student seat access
+
+1. A student registers for an approved library.
+2. The student can log in and view their dashboard while waiting for assignment.
+3. A librarian assigns the student to a seat and shift.
+4. Community access and concern creation become available after assignment.
+5. If the student leaves, the librarian releases the assignment from the Seat Map.
+6. The release creates a student history record with joining and leaving dates.
 
 ### Raised-hand concern flow
 

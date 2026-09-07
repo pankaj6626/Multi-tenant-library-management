@@ -5,6 +5,7 @@ import feeRepository from '../../fees/repositories/fee.repository.js';
 import * as libraryService from '../../libraries/services/library.service.js';
 import seatRepository from '../../seats/repositories/seat.repository.js';
 import studentRepository from '../repositories/student.repository.js';
+import * as studentHistoryRepository from '../repositories/student-history.repository.js';
 
 const register = async ({ libraryCode, name, email, password, mobile }) => {
   const library = await libraryService.findApprovedByCode(libraryCode);
@@ -40,6 +41,8 @@ const hasSeatAssignment = async (studentId, libraryId) => Boolean(
   }),
 );
 
-export { register, profile, findByLibrary, hasSeatAssignment };
+const findHistoryByLibrary = (libraryId) => studentHistoryRepository.findByLibrary(libraryId);
+
+export { register, profile, findByLibrary, hasSeatAssignment, findHistoryByLibrary };
 export const findByEmail = studentRepository.findByEmail;
 export const findOne = studentRepository.findOne;
