@@ -11,11 +11,15 @@ const seatCache = createSeatCache(redis);
 const seatStatus = createSeatStatusService({ feeRepository, concernRepository });
 const seatAssignment = createSeatAssignmentService({ seatRepository, studentRepository, seatCache });
 
+const sortSeats = (seats) => [...seats].sort((left, right) =>
+  String(left.seatNumber).localeCompare(String(right.seatNumber), undefined, { numeric: true }),
+);
+
 const list = async (libraryId) => {
   const cached = await seatCache.get(libraryId);
-  if (cached) return cached;
+  if (cached) return sortSeats(cached);
   const seats = await seatRepository.findByLibrary(libraryId);
-  const result = await seatStatus.enrich(seats);
+  const result = sortSeats(await seatStatus.enrich(seats));
   await seatCache.set(libraryId, result);
   return result;
 };

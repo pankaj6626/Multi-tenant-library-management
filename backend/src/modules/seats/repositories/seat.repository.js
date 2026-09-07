@@ -7,7 +7,7 @@ export default {
     Seat.find({ library }).populate(
       "assignments.student",
       "name mobile createdAt",
-    ),
+    ).sort({ seatNumber: 1 }),
   findOne: (query) => Seat.findOne(query),
   findOneAndUpdate: (query, update) =>
     Seat.findOneAndUpdate(query, update, { new: true }),
