@@ -33,6 +33,13 @@ const profile = async (studentId) => {
   return { student, seat, payments, concerns };
 };
 
-export { register, profile, findByLibrary };
+const hasSeatAssignment = async (studentId, libraryId) => Boolean(
+  await seatRepository.findOne({
+    library: libraryId,
+    'assignments.student': studentId,
+  }),
+);
+
+export { register, profile, findByLibrary, hasSeatAssignment };
 export const findByEmail = studentRepository.findByEmail;
 export const findOne = studentRepository.findOne;

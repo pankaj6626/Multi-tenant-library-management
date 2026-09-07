@@ -1,22 +1,23 @@
 import express from 'express';
 
 import { allow, protect } from '../../../common/guards/auth.guard.js';
+import requireSeatAssignment from '../../../common/guards/seat-assignment.guard.js';
 import asyncHandler from '../../../common/utils/async-handler.js';
 import * as service from '../services/community.service.js';
 
 const router = express.Router();
 router.use(protect);
 
-router.get('/posts', allow('STUDENT', 'LIBRARIAN'), asyncHandler(async (req, res) => {
+router.get('/posts', allow('STUDENT', 'LIBRARIAN'), requireSeatAssignment, asyncHandler(async (req, res) => {
   res.json(await service.findPosts(req.user.libraryId, req.user.id));
 }));
-router.post('/posts', allow('STUDENT'), asyncHandler(async (req, res) => {
+router.post('/posts', allow('STUDENT'), requireSeatAssignment, asyncHandler(async (req, res) => {
   res.status(201).json(await service.createPost(req.user.libraryId, req.user.id, req.body.title, req.body.content));
 }));
-router.post('/posts/:id/comments', allow('STUDENT'), asyncHandler(async (req, res) => {
+router.post('/posts/:id/comments', allow('STUDENT'), requireSeatAssignment, asyncHandler(async (req, res) => {
   res.status(201).json(await service.addComment(req.user.libraryId, req.params.id, req.user.id, req.body.message));
 }));
-router.patch('/posts/:id/like', allow('STUDENT'), asyncHandler(async (req, res) => {
+router.patch('/posts/:id/like', allow('STUDENT'), requireSeatAssignment, asyncHandler(async (req, res) => {
   res.json(await service.toggleLike(req.user.libraryId, req.params.id, req.user.id));
 }));
 router.delete('/posts/:id', allow('LIBRARIAN'), asyncHandler(async (req, res) => {
@@ -28,7 +29,7 @@ router.delete('/posts/:postId/comments/:commentId', allow('LIBRARIAN'), asyncHan
   res.status(204).send();
 }));
 
-router.get('/notices', allow('STUDENT', 'LIBRARIAN'), asyncHandler(async (req, res) => {
+router.get('/notices', allow('STUDENT', 'LIBRARIAN'), requireSeatAssignment, asyncHandler(async (req, res) => {
   res.json(await service.findNotices(req.user.libraryId));
 }));
 router.post('/notices', allow('LIBRARIAN'), asyncHandler(async (req, res) => {

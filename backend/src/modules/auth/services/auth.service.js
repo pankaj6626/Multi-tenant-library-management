@@ -33,10 +33,14 @@ const login = async (credentials) => {
   }
 
   const { user, ...tokenPayload } = member;
+  const seatAssigned = member.role === 'STUDENT'
+    ? await studentService.hasSeatAssignment(member.id, member.libraryId)
+    : true;
 
   return {
     token: createAccessToken(tokenPayload),
     role: member.role,
+    seatAssigned,
     user: member.user,
   };
 };

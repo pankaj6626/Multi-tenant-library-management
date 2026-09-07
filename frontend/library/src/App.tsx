@@ -68,6 +68,9 @@ function App() {
     localStorage.getItem("libraryToken") || "",
   );
   const [role, setRole] = useState(localStorage.getItem("libraryRole") || "");
+  const [seatAssigned, setSeatAssigned] = useState(
+    localStorage.getItem("librarySeatAssigned") === "true",
+  );
   const [view, setView] = useState<View>(
     role === "ADMIN"
       ? "admin"
@@ -99,21 +102,36 @@ function App() {
     const timer = window.setTimeout(() => setToast(null), 4500);
     return () => window.clearTimeout(timer);
   }, [toast]);
+  useEffect(() => {
+    if (!token || role !== "STUDENT") return;
+    api("/students/me", "GET", undefined, token)
+      .then((profile) => {
+        const assigned = Boolean(profile.seat);
+        setSeatAssigned(assigned);
+        localStorage.setItem("librarySeatAssigned", String(assigned));
+      })
+      .catch(() => setSeatAssigned(false));
+  }, [token, role]);
   const showToast = (message: string, kind: Toast["kind"] = "success") =>
     setToast({ message, kind });
   const logout = () => {
     localStorage.removeItem("libraryToken");
     localStorage.removeItem("libraryRole");
+    localStorage.removeItem("librarySeatAssigned");
     setToken("");
     setRole("");
+    setSeatAssigned(false);
     setView("home");
     showToast("You have been signed out.");
   };
-  const loggedIn = (data: { token: string; role: string }) => {
+  const loggedIn = (data: { token: string; role: string; seatAssigned?: boolean }) => {
     setToken(data.token);
     setRole(data.role);
+    const assigned = data.role !== "STUDENT" || data.seatAssigned === true;
+    setSeatAssigned(assigned);
     localStorage.setItem("libraryToken", data.token);
     localStorage.setItem("libraryRole", data.role);
+    localStorage.setItem("librarySeatAssigned", String(assigned));
     setView(
       data.role === "ADMIN"
         ? "admin"
@@ -141,7 +159,7 @@ function App() {
           >
             {theme === "light" ? "☾" : "☀"}
           </button>
-          {token && (role === "STUDENT" || role === "LIBRARIAN") && (
+          {token && (role === "LIBRARIAN" || (role === "STUDENT" && seatAssigned)) && (
             <button
               className="community-link"
               onClick={() =>
@@ -913,20 +931,27 @@ function Student({ token }: { token: string }) {
           ])}
         />
       </section>
-      <section className="panel concern-panel">
-        <PanelHeading title="Need a hand?" meta="Message your librarian" />
-        <form className="concern-form" onSubmit={send}>
-          <textarea
-            required
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            placeholder="Tell your librarian what you need..."
-          />
-          <button className="primary small">
-            Raise concern <span>✋</span>
-          </button>
-        </form>
-      </section>
+      {data.seat ? (
+        <section className="panel concern-panel">
+          <PanelHeading title="Need a hand?" meta="Message your librarian" />
+          <form className="concern-form" onSubmit={send}>
+            <textarea
+              required
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="Tell your librarian what you need..."
+            />
+            <button className="primary small">
+              Raise concern <span>✋</span>
+            </button>
+          </form>
+        </section>
+      ) : (
+        <section className="panel concern-panel access-note">
+          <PanelHeading title="Seat assignment pending" meta="Access limited" />
+          <p className="muted">Community access and concerns become available after a librarian assigns your seat.</p>
+        </section>
+      )}
     </Dashboard>
   );
 }

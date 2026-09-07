@@ -1,12 +1,13 @@
 import express from 'express';
 
 import { allow, protect } from '../../../common/guards/auth.guard.js';
+import requireSeatAssignment from '../../../common/guards/seat-assignment.guard.js';
 import asyncHandler from '../../../common/utils/async-handler.js';
 import * as concernService from '../services/concern.service.js';
 
 const router = express.Router();
 
-router.post('/', protect, allow('STUDENT'), asyncHandler(async (req, res) => {
+router.post('/', protect, allow('STUDENT'), requireSeatAssignment, asyncHandler(async (req, res) => {
   const concern = await concernService.create({
     library: req.user.libraryId,
     student: req.user.id,
