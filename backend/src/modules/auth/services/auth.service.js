@@ -4,6 +4,7 @@ import { createAccessToken, createRefreshToken } from './token.service.js';
 import * as libraryService from '../../libraries/services/library.service.js';
 import * as librarianService from '../../librarians/services/librarian.service.js';
 import * as studentService from '../../students/services/student.service.js';
+import * as studentHistoryRepository from '../../students/repositories/student-history.repository.js';
 
 const adminAuthenticator = createAdminAuthenticator({
   email: process.env.ADMIN_EMAIL,
@@ -20,6 +21,7 @@ const studentAuthenticator = createMemberAuthenticator({
   role: 'STUDENT',
   findByEmail: studentService.findByEmail,
   findApprovedByCode: libraryService.findApprovedByCode,
+  findHistoryByStudent: studentHistoryRepository.findByStudent,
 });
 
 const login = async (credentials) => {

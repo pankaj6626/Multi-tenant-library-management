@@ -14,4 +14,8 @@ router.get('/history', protect, allow('LIBRARIAN'), asyncHandler(async (req, res
   res.json(await studentService.findHistoryByLibrary(req.user.libraryId));
 }));
 
+router.delete('/:id', protect, allow('LIBRARIAN'), asyncHandler(async (req, res) => {
+  res.json(await studentService.removeUnassigned(req.user.libraryId, req.params.id));
+}));
+
 export default router;

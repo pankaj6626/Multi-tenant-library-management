@@ -8,12 +8,16 @@ const createAdminAuthenticator = ({ email, password }) => ({
   },
 });
 
-const createMemberAuthenticator = ({ role, findByEmail, findApprovedByCode }) => ({
+const createMemberAuthenticator = ({ role, findByEmail, findApprovedByCode, findHistoryByStudent }) => ({
   async authenticate({ email, password, libraryCode }) {
     const user = await findByEmail(email);
     if (!user) return null;
     if (!verifyPassword(password, user.passwordHash)) {
       throw new HttpError('Invalid email or password', 401);
+    }
+
+    if (findHistoryByStudent && await findHistoryByStudent(user._id)) {
+      throw new HttpError('You are no longer part of this library', 403);
     }
 
     const library = await findApprovedByCode(libraryCode);

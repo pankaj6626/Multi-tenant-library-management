@@ -231,6 +231,7 @@ Approving the first librarian creates the requested number of seats for that lib
 | GET | `/students/me` | Student | Get profile, seat, payments, and concerns |
 | GET | `/libraries/students` | Librarian | List students in the librarian's library |
 | GET | `/libraries/students/history` | Librarian | View students who previously left the library |
+| DELETE | `/libraries/students/:id` | Librarian | Remove an unassigned student and archive their history |
 
 ### Seats
 
@@ -243,7 +244,7 @@ Approving the first librarian creates the requested number of seats for that lib
 
 Each seat supports one `SHIFT_1` assignment and one `SHIFT_2` assignment. A student is removed from previous assignments before a new assignment is saved.
 
-When a librarian releases a student, the backend stores a `StudentHistory` document containing the library, student ID, name, email, mobile number, joining date, and leaving date. The librarian can view these records in the Assign Seats section of the dashboard.
+When a librarian releases an assigned student, the backend stores a `StudentHistory` document containing the library, student ID, name, email, mobile number, joining date, and leaving date. An unassigned registration can be removed from the Assign Seats section through `DELETE /libraries/students/:id`; it is archived in the same history collection before the account is deleted. The endpoint rejects removal when the student still has a seat assignment.
 
 ### Fees
 

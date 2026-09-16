@@ -1,3 +1,4 @@
+import HttpError from '../../../common/exceptions/http-error.js';
 import { hashPassword } from '../../../common/utils/security.js';
 import redis from '../../../config/redis.js';
 import * as concernRepository from '../../concerns/repositories/concern.repository.js';
@@ -26,6 +27,11 @@ const findByLibrary = async (library) => {
 
 const profile = async (studentId) => {
   const student = await studentRepository.findProfile(studentId);
+  const history = await studentHistoryRepository.findByStudent(studentId);
+  if (!student || history) {
+    throw new HttpError('You are no longer part of this library', 403);
+  }
+
   const [seat, payments, concerns] = await Promise.all([
     seatRepository.findOne({ 'assignments.student': student._id }),
     feeRepository.findByStudent(student._id),
@@ -43,6 +49,30 @@ const hasSeatAssignment = async (studentId, libraryId) => Boolean(
 
 const findHistoryByLibrary = (libraryId) => studentHistoryRepository.findByLibrary(libraryId);
 
-export { register, profile, findByLibrary, hasSeatAssignment, findHistoryByLibrary };
+const removeUnassigned = async (libraryId, studentId) => {
+  const student = await studentRepository.findOne({ _id: studentId, library: libraryId });
+  if (!student) throw new HttpError('Student not found', 404);
+
+  const assignedSeat = await seatRepository.findOne({
+    library: libraryId,
+    'assignments.student': studentId,
+  });
+  if (assignedSeat) throw new HttpError('Release the student seat assignment before removing the student', 409);
+
+  await studentHistoryRepository.create({
+    library: libraryId,
+    student: student._id,
+    name: student.name,
+    email: student.email,
+    mobile: student.mobile,
+    joinedAt: student.createdAt,
+    leftAt: new Date(),
+  });
+  await studentRepository.deleteOne({ _id: studentId, library: libraryId });
+  await redis.del(`library:students:${libraryId}`);
+  return { removed: true };
+};
+
+export { register, profile, findByLibrary, hasSeatAssignment, findHistoryByLibrary, removeUnassigned };
 export const findByEmail = studentRepository.findByEmail;
 export const findOne = studentRepository.findOne;

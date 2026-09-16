@@ -645,6 +645,20 @@ function Librarian({ token }: { token: string }) {
       (n, s) => n + s.assignments.filter((a: any) => a.hasOpenConcern).length,
       0,
     );
+  const assignedStudentIds = new Set(
+    seats.flatMap((seat) => seat.assignments.map((assignment: any) => String(assignment.student._id))),
+  );
+  const historicalStudentIds = new Set(
+    studentHistory.map((entry) => String(entry.student)),
+  );
+  const assignableStudents = students.filter(
+    (student) => !historicalStudentIds.has(String(student._id)),
+  );
+  const unassignedStudents = students.filter(
+    (student) =>
+      !assignedStudentIds.has(String(student._id)) &&
+      !historicalStudentIds.has(String(student._id)),
+  );
   return (
     <Dashboard
       title="Good morning, librarian"
@@ -745,7 +759,7 @@ function Librarian({ token }: { token: string }) {
               value={assign.studentId}
               set={(v) => setAssign({ ...assign, studentId: v })}
               label="Select student"
-              options={students.map((s) => [s._id, s.name])}
+              options={assignableStudents.map((s) => [s._id, s.name])}
             />
             <Select
               value={assign.shift}
@@ -770,6 +784,30 @@ function Librarian({ token }: { token: string }) {
                 entry.mobile,
                 new Date(entry.joinedAt).toLocaleDateString(),
                 new Date(entry.leftAt).toLocaleDateString(),
+              ])}
+            />
+          </div>
+          <div className="student-history">
+            <PanelHeading title="Student registrations" meta={`${unassignedStudents.length} unassigned`} />
+            <Table
+              heads={["Name", "Email", "Mobile", "Action"]}
+              rows={unassignedStudents.map((student) => [
+                student.name,
+                student.email,
+                student.mobile,
+                <button
+                  className="danger small"
+                  onClick={async () => {
+                    try {
+                      await api(`/libraries/students/${student._id}`, "DELETE", undefined, token);
+                      load();
+                    } catch (x) {
+                      setError(x instanceof Error ? x.message : "Could not remove student");
+                    }
+                  }}
+                >
+                  Remove
+                </button>,
               ])}
             />
           </div>
