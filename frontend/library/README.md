@@ -26,7 +26,15 @@ npm run build
 npm run lint
 ```
 
-The production API URL can be configured with `VITE_API_URL`.
+For local development, requests to `/api/v1` are proxied to `http://localhost:5000`.
+For a Vercel deployment, set the Vercel environment variable below before building:
+
+```env
+VITE_API_URL=https://your-render-service.onrender.com/api/v1
+```
+
+The value must include `/api/v1` and must not end with a slash. Vite injects `VITE_*`
+variables at build time, so redeploy after changing this value.
 
 ## Original Vite Notes
 

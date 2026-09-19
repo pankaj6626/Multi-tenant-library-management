@@ -201,13 +201,15 @@ UPSTASH_REDIS_REST_URL=https://your-upstash-endpoint.upstash.io
 UPSTASH_REDIS_REST_TOKEN=your-upstash-rest-token
 ```
 
-The frontend reads its API URL from `frontend/library/.env`:
+The frontend reads its API URL from `frontend/library/.env` during local development:
 
 ```env
 VITE_API_URL=http://localhost:5000/api/v1
 ```
 
-When `VITE_API_URL` is absent, the frontend uses the same localhost API URL by default.
+When `VITE_API_URL` is absent, the frontend uses `/api/v1`, which is proxied to the
+local backend by Vite. For Vercel, set `VITE_API_URL` to the full Render API URL,
+including `/api/v1`, in the Vercel project environment variables.
 
 `FRONTEND_URL` may contain comma-separated origins when more than one frontend origin is needed. The backend allows requests without an `Origin` header for tools such as curl and server-to-server calls.
 

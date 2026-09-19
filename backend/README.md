@@ -10,6 +10,11 @@ Redis caching uses Upstash REST. Add `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS
 
 The server starts at `http://localhost:5000`; `GET /health` confirms it is running.
 
+For deployment, set `FRONTEND_URL` to the deployed Vercel origin, for example
+`https://your-library.vercel.app`. Multiple origins can be separated with commas.
+The backend also allows requests without an `Origin` header for health checks, curl,
+and server-to-server calls.
+
 ## Authentication
 
 Use `POST /api/v1/auth/login` with `email`, `password`, and `libraryCode` for librarians and students. The admin uses `ADMIN_EMAIL` and `ADMIN_PASSWORD` from `.env` and does not need a library code. Send the returned token as `Authorization: Bearer <token>`.

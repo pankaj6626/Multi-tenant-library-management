@@ -23,7 +23,27 @@ import './events/consumers/audit.consumer.js';
 const app = express();
 const apiPrefix = '/api/v1';
 
-app.use(cors());
+const configuredOrigins = (process.env.FRONTEND_URL || '')
+  .split(',')
+  .map((origin) => origin.trim().replace(/\/$/, ''))
+  .filter(Boolean);
+const allowedOrigins = [
+  ...configuredOrigins,
+  ...(process.env.NODE_ENV === 'production'
+    ? []
+    : ['http://localhost:5173', 'http://127.0.0.1:5173']),
+];
+
+app.use(cors({
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+      return;
+    }
+
+    callback(new Error('Origin is not allowed by CORS'));
+  },
+}));
 app.use(express.json());
 
 app.get('/health', (_req, res) => {
