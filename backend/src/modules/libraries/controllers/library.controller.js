@@ -1,7 +1,7 @@
-const express = require('express');
+import express from 'express';
 
-const asyncHandler = require('../../../common/utils/async-handler');
-const libraryService = require('../services/library.service');
+import asyncHandler from '../../../common/utils/async-handler.js';
+import * as libraryService from '../services/library.service.js';
 
 const router = express.Router();
 
@@ -14,4 +14,4 @@ router.post('/register', asyncHandler(async (req, res) => {
   });
 }));
 
-module.exports = router;
+export default router;

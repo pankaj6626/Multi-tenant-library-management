@@ -1,5 +1,5 @@
-const Post = require('../entities/post.entity');
-const Notice = require('../entities/notice.entity');
+import Post from '../entities/post.entity.js';
+import Notice from '../entities/notice.entity.js';
 
 const populatePost = (query) => query
   .populate('author', 'name')
@@ -15,4 +15,4 @@ const findNotices = (library) => Notice.find({ library }).populate('author', 'na
 const createNotice = (data) => Notice.create(data);
 const deleteNotice = (query) => Notice.findOneAndDelete(query);
 
-module.exports = { findPosts, createPost, findPost, savePost, deletePost, findNotices, createNotice, deleteNotice };
+export { findPosts, createPost, findPost, savePost, deletePost, findNotices, createNotice, deleteNotice };

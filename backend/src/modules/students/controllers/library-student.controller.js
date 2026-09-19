@@ -1,8 +1,8 @@
-const express = require('express');
+import express from 'express';
 
-const { allow, protect } = require('../../../common/guards/auth.guard');
-const asyncHandler = require('../../../common/utils/async-handler');
-const studentService = require('../services/student.service');
+import { allow, protect } from '../../../common/guards/auth.guard.js';
+import asyncHandler from '../../../common/utils/async-handler.js';
+import * as studentService from '../services/student.service.js';
 
 const router = express.Router();
 
@@ -10,4 +10,12 @@ router.get('/', protect, allow('LIBRARIAN'), asyncHandler(async (req, res) => {
   res.json(await studentService.findByLibrary(req.user.libraryId));
 }));
 
-module.exports = router;
+router.get('/history', protect, allow('LIBRARIAN'), asyncHandler(async (req, res) => {
+  res.json(await studentService.findHistoryByLibrary(req.user.libraryId));
+}));
+
+router.delete('/:id', protect, allow('LIBRARIAN'), asyncHandler(async (req, res) => {
+  res.json(await studentService.removeUnassigned(req.user.libraryId, req.params.id));
+}));
+
+export default router;

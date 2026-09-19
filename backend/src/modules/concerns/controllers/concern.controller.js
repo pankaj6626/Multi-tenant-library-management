@@ -1,12 +1,13 @@
-const express = require('express');
+import express from 'express';
 
-const { allow, protect } = require('../../../common/guards/auth.guard');
-const asyncHandler = require('../../../common/utils/async-handler');
-const concernService = require('../services/concern.service');
+import { allow, protect } from '../../../common/guards/auth.guard.js';
+import requireSeatAssignment from '../../../common/guards/seat-assignment.guard.js';
+import asyncHandler from '../../../common/utils/async-handler.js';
+import * as concernService from '../services/concern.service.js';
 
 const router = express.Router();
 
-router.post('/', protect, allow('STUDENT'), asyncHandler(async (req, res) => {
+router.post('/', protect, allow('STUDENT'), requireSeatAssignment, asyncHandler(async (req, res) => {
   const concern = await concernService.create({
     library: req.user.libraryId,
     student: req.user.id,
@@ -24,4 +25,4 @@ router.patch('/:id/resolve', protect, allow('LIBRARIAN'), asyncHandler(async (re
   res.json(concern);
 }));
 
-module.exports = router;
+export default router;

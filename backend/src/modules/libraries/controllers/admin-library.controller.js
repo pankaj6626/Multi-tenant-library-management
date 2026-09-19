@@ -1,8 +1,8 @@
-const express = require('express');
+import express from 'express';
 
-const { allow, protect } = require('../../../common/guards/auth.guard');
-const asyncHandler = require('../../../common/utils/async-handler');
-const libraryService = require('../services/library.service');
+import { allow, protect } from '../../../common/guards/auth.guard.js';
+import asyncHandler from '../../../common/utils/async-handler.js';
+import * as libraryService from '../services/library.service.js';
 
 const router = express.Router();
 
@@ -22,4 +22,4 @@ router.patch('/:id/reject', asyncHandler(async (req, res) => {
   res.json({ message: 'Library rejected', library });
 }));
 
-module.exports = router;
+export default router;

@@ -1,6 +1,6 @@
-const HttpError = require('../../../common/exceptions/http-error');
-const redis = require('../../../config/redis');
-const concernRepository = require('../repositories/concern.repository');
+import HttpError from '../../../common/exceptions/http-error.js';
+import redis from '../../../config/redis.js';
+import * as concernRepository from '../repositories/concern.repository.js';
 
 const create = async (concernData) => {
   const concern = await concernRepository.create(concernData);
@@ -18,4 +18,4 @@ const resolve = async (concernId, libraryId) => {
   return concern;
 };
 
-module.exports = { create, findByLibrary, resolve };
+export { create, findByLibrary, resolve };

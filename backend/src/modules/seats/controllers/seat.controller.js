@@ -1,8 +1,8 @@
-const express = require('express');
+import express from 'express';
 
-const { allow, protect } = require('../../../common/guards/auth.guard');
-const asyncHandler = require('../../../common/utils/async-handler');
-const seatService = require('../services/seat.service');
+import { allow, protect } from '../../../common/guards/auth.guard.js';
+import asyncHandler from '../../../common/utils/async-handler.js';
+import * as seatService from '../services/seat.service.js';
 
 const router = express.Router();
 
@@ -28,4 +28,4 @@ router.patch('/:id/release', asyncHandler(async (req, res) => {
   res.json(seat);
 }));
 
-module.exports = router;
+export default router;

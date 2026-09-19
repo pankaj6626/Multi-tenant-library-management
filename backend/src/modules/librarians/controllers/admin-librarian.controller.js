@@ -1,8 +1,8 @@
-const express = require('express');
+import express from 'express';
 
-const { allow, protect } = require('../../../common/guards/auth.guard');
-const asyncHandler = require('../../../common/utils/async-handler');
-const librarianService = require('../services/librarian.service');
+import { allow, protect } from '../../../common/guards/auth.guard.js';
+import asyncHandler from '../../../common/utils/async-handler.js';
+import * as librarianService from '../services/librarian.service.js';
 
 const router = express.Router();
 
@@ -17,4 +17,9 @@ router.patch('/:id/approve', asyncHandler(async (req, res) => {
   res.json({ message: 'Librarian approved and seats created', librarian });
 }));
 
-module.exports = router;
+router.patch('/:id/reject', asyncHandler(async (req, res) => {
+  const librarian = await librarianService.reject(req.params.id);
+  res.json({ message: 'Librarian rejected', librarian });
+}));
+
+export default router;
