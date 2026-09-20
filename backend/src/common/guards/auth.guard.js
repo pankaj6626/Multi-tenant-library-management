@@ -1,19 +1,24 @@
 import { verifyToken } from '../utils/security.js';
+import HttpError from '../exceptions/http-error.js';
+
 const protect = (req, res, next) => {
+  const token = req.headers.authorization?.replace("Bearer ", "");
+  if (!token) {
+    next(new HttpError('Authentication required', 401, 'AUTHENTICATION_REQUIRED'));
+    return;
+  }
+
   try {
-    const token = req.headers.authorization?.replace("Bearer ", "");
-    if (!token)
-      return res.status(401).json({ message: "Authentication required" });
     req.user = verifyToken(token, 'access');
     next();
   } catch {
-    res.status(401).json({ message: "Invalid or expired token" });
+    next(new HttpError('Invalid or expired token', 401, 'INVALID_ACCESS_TOKEN'));
   }
 };
 const allow =
   (...roles) =>
-  (req, res, next) =>
+  (req, _res, next) =>
     roles.includes(req.user.role)
       ? next()
-      : res.status(403).json({ message: "Access denied" });
+      : next(new HttpError('Access denied', 403, 'ACCESS_DENIED'));
 export { protect, allow };

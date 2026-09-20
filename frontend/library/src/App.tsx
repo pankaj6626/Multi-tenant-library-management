@@ -19,6 +19,28 @@ type AuthSession = {
   role: string;
   seatAssigned?: boolean;
 };
+type ApiErrorBody = {
+  message?: string;
+  code?: string;
+  details?: Record<string, string> | string[];
+  requestId?: string;
+};
+
+class ApiError extends Error {
+  status: number;
+  code?: string;
+  details?: ApiErrorBody["details"];
+  requestId?: string;
+
+  constructor(status: number, body: ApiErrorBody, fallback: string) {
+    super(body.message || fallback);
+    this.name = "ApiError";
+    this.status = status;
+    this.code = body.code;
+    this.details = body.details;
+    this.requestId = body.requestId;
+  }
+}
 
 let accessToken = "";
 
@@ -39,16 +61,23 @@ async function refreshAccessToken(): Promise<AuthSession> {
     method: "POST",
     credentials: "include",
   });
-  if (!res.ok) throw new Error("Session expired");
-  return res.json();
+  const body = (await res.json().catch(() => ({}))) as ApiErrorBody;
+  if (!res.ok) throw new ApiError(res.status, body, "Session expired");
+  return body as AuthSession;
 }
 
-async function api(
+const readResponse = async (res: Response): Promise<unknown> => {
+  if (res.status === 204) return null;
+  if (!res.headers.get("content-type")?.includes("application/json")) return null;
+  return res.json().catch(() => null);
+};
+
+async function api<T = ReturnType<typeof JSON.parse>>(
   path: string,
   method = "GET",
   body?: unknown,
   token?: string,
-) {
+): Promise<T> {
   const request = (requestToken: string) => fetch(`${API}${path}`, {
     method,
     credentials: "include",
@@ -68,28 +97,25 @@ async function api(
       window.dispatchEvent(new Event("library-auth-expired"));
     }
   }
-  const contentType = res.headers.get("content-type") || "";
-  const data =
-    res.status === 204
-      ? null
-      : contentType.includes("application/json")
-        ? await res.json()
-        : null;
-  if (!data && !res.ok)
-    throw new Error(
-      `Request failed (${res.status}). Check that the backend API is running at ${API}.`,
-    );
+  const data = await readResponse(res);
   if (!res.ok) {
+    const errorBody = data && typeof data === "object" && !Array.isArray(data)
+      ? data as ApiErrorBody
+      : {};
     if (path === "/concerns" && method === "POST")
       window.dispatchEvent(
         new CustomEvent("library-toast", {
           detail: {
-            message: data?.message || "Could not send concern",
+            message: errorBody.message || "Could not send concern",
             kind: "error",
           },
         }),
       );
-    throw new Error(data?.message || "Request failed");
+    throw new ApiError(
+      res.status,
+      errorBody,
+      `Request failed (${res.status}). Check that the backend API is running at ${API}.`,
+    );
   }
   if (path === "/concerns" && method === "POST")
     window.dispatchEvent(
@@ -97,7 +123,7 @@ async function api(
         detail: { message: "Concern sent to your librarian.", kind: "success" },
       }),
     );
-  return data;
+  return data as T;
 }
 
 function App() {

@@ -1,5 +1,6 @@
 import 'dotenv/config';
 
+import crypto from 'crypto';
 import cors from 'cors';
 import express from 'express';
 
@@ -22,6 +23,13 @@ import './events/consumers/audit.consumer.js';
 
 const app = express();
 const apiPrefix = '/api/v1';
+
+app.use((req, res, next) => {
+  const requestId = req.headers['x-request-id'] || crypto.randomUUID();
+  req.id = requestId;
+  res.setHeader('X-Request-Id', requestId);
+  next();
+});
 
 const configuredOrigins = (process.env.FRONTEND_URL || '')
   .split(',')

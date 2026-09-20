@@ -21,6 +21,19 @@ Use `POST /api/v1/auth/login` with `email`, `password`, and `libraryCode` for li
 
 Access tokens expire after 30 minutes. `POST /api/v1/auth/refresh` rotates the refresh cookie and returns a new access token; clients must send credentials/cookies with this request. `POST /api/v1/auth/logout` revokes the refresh session and clears the cookie, so it does not require an access token. Configure `FRONTEND_URL` for credentialed cross-origin requests in production.
 
+## Error responses
+
+API errors use a consistent JSON shape with `success: false`, a user-safe `message`, a stable `code`, and a `requestId` for tracing. Validation errors may include a `details` object. Clients should display `message` and retain `requestId` for support diagnostics; server stack traces and sensitive values are never returned.
+
+```json
+{
+	"success": false,
+	"message": "This shift is already occupied",
+	"code": "SEAT_SHIFT_OCCUPIED",
+	"requestId": "request-id"
+}
+```
+
 ## Main endpoints
 
 - `POST /api/v1/libraries/register`
