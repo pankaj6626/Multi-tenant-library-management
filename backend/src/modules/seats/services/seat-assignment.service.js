@@ -7,13 +7,10 @@ const createSeatAssignmentService = ({ seatRepository, studentRepository, studen
 
     if (!seat || !student) throw new HttpError('Seat or student not found', 404);
     if (!['SHIFT_1', 'SHIFT_2'].includes(shift)) throw new HttpError('shift must be SHIFT_1 or SHIFT_2');
-    if (seat.assignments.some((assignment) => assignment.shift === shift)) {
-      throw new HttpError('This shift is already occupied', 409);
-    }
 
-    await seatRepository.removeStudentAssignments(libraryId, student._id);
-    seat.assignments.push({ student: student._id, shift });
-    const result = await seat.save();
+    const result = await seatRepository.assign(libraryId, seatId, student._id, shift);
+    if (!result) throw new HttpError('This shift is already occupied', 409);
+    await seatRepository.removeStudentAssignments(libraryId, student._id, seatId);
     await seatCache.invalidate(libraryId);
     return result;
   };

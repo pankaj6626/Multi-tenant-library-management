@@ -790,8 +790,14 @@ function Librarian({ token }: { token: string }) {
                       title="Release student"
                       aria-label={`Release ${a.student.name}`}
                       onClick={async () => {
+                        const confirmed = window.confirm(
+                          `Do you really want to remove ${a.student.name} from this seat?`,
+                        );
+                        if (!confirmed) return;
+
                         try {
                           await api(`/seats/${s._id}/release`, "PATCH", { shift: a.shift }, token);
+                          notifySuccess(`${a.student.name} was removed from the library.`);
                           load();
                         } catch (x) {
                           setError(x instanceof Error ? x.message : "Could not release student");
