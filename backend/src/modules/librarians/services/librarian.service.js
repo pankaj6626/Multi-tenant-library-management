@@ -6,7 +6,10 @@ import * as libraryService from '../../libraries/services/library.service.js';
 import seatRepository from '../../seats/repositories/seat.repository.js';
 import librarianRepository from '../repositories/librarian.repository.js';
 
-const register = async ({ libraryCode, name, email, password, mobile, totalSeats }) => {
+const register = async ({ libraryCode, name, email, password, confirmPassword, mobile, totalSeats }) => {
+  if (password !== confirmPassword) {
+    throw new HttpError('Passwords do not match. Please enter the same password in both fields.', 400);
+  }
   const library = await libraryService.findApprovedByCode(libraryCode);
   const librarian = await librarianRepository.create({ library: library._id, name, email, passwordHash: hashPassword(password), mobile, totalSeats });
   publish(events.LIBRARIAN_REGISTERED, { librarianId: librarian._id });

@@ -26,6 +26,14 @@ const setAccessToken = (token: string) => {
   accessToken = token;
 };
 
+const notifySuccess = (message: string) => {
+  window.dispatchEvent(
+    new CustomEvent("library-toast", {
+      detail: { message, kind: "success" },
+    }),
+  );
+};
+
 async function refreshAccessToken(): Promise<AuthSession> {
   const res = await fetch(`${API}/auth/refresh`, {
     method: "POST",
@@ -389,10 +397,15 @@ function Form({
   button: string;
 }) {
   const [values, setValues] = useState<Values>({});
+  const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const send = async (e: FormEvent) => {
     e.preventDefault();
+    if (fields.some(([name]) => name === "confirmPassword") && values.password !== values.confirmPassword) {
+      setError("Passwords do not match. Please enter the same password in both fields.");
+      return;
+    }
     setBusy(true);
     setError("");
     try {
@@ -414,12 +427,25 @@ function Form({
         {fields.map(([name, label, type]) => (
           <label key={name}>
             {label}
-            <input
-              required={name !== "libraryCodeOptional"}
-              type={type || "text"}
-              value={values[name] || ""}
-              onChange={(e) => setValues({ ...values, [name]: e.target.value })}
-            />
+            <span className={type === "password" ? "password-input" : undefined}>
+              <input
+                required={name !== "libraryCodeOptional"}
+                type={type === "password" && visiblePasswords[name] ? "text" : type || "text"}
+                value={values[name] || ""}
+                onChange={(e) => setValues({ ...values, [name]: e.target.value })}
+              />
+              {type === "password" && (
+                <button
+                  className="password-toggle"
+                  type="button"
+                  onClick={() => setVisiblePasswords({ ...visiblePasswords, [name]: !visiblePasswords[name] })}
+                  aria-label={visiblePasswords[name] ? `Hide ${label}` : `Show ${label}`}
+                  title={visiblePasswords[name] ? `Hide ${label}` : `Show ${label}`}
+                >
+                  {visiblePasswords[name] ? "◉" : "◌"}
+                </button>
+              )}
+            </span>
           </label>
         ))}
         {error && <p className="error">{error}</p>}
@@ -471,6 +497,7 @@ const LibrarianForm = ({
       ["name", "Full name"],
       ["email", "Email", "email"],
       ["password", "Password", "password"],
+      ["confirmPassword", "Confirm password", "password"],
       ["mobile", "Mobile number"],
       ["totalSeats", "Total seats", "number"],
     ]}
@@ -499,6 +526,7 @@ const StudentForm = ({
       ["name", "Full name"],
       ["email", "Email", "email"],
       ["password", "Password", "password"],
+      ["confirmPassword", "Confirm password", "password"],
       ["mobile", "Mobile number"],
     ]}
     button="Create student account"
@@ -794,6 +822,7 @@ function Librarian({ token }: { token: string }) {
                   { studentId: assign.studentId, shift: assign.shift },
                   token,
                 );
+                notifySuccess("Seat assigned successfully.");
                 setAssign({});
                 load();
               } catch (x) {
@@ -880,6 +909,7 @@ function Librarian({ token }: { token: string }) {
                   },
                   token,
                 );
+                notifySuccess("Payment recorded successfully.");
                 setFee({});
                 load();
               } catch (x) {

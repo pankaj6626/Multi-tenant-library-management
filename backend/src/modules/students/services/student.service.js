@@ -8,7 +8,10 @@ import seatRepository from '../../seats/repositories/seat.repository.js';
 import studentRepository from '../repositories/student.repository.js';
 import * as studentHistoryRepository from '../repositories/student-history.repository.js';
 
-const register = async ({ libraryCode, name, email, password, mobile }) => {
+const register = async ({ libraryCode, name, email, password, confirmPassword, mobile }) => {
+  if (password !== confirmPassword) {
+    throw new HttpError('Passwords do not match. Please enter the same password in both fields.', 400);
+  }
   const library = await libraryService.findApprovedByCode(libraryCode);
   const student = await studentRepository.create({ library: library._id, name, email, passwordHash: hashPassword(password), mobile });
   await redis.del(`library:students:${library._id}`);
