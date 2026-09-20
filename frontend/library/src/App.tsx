@@ -1,5 +1,6 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useState, type CSSProperties, type FormEvent, type ReactNode } from "react";
 import "./App.css";
+import "./premium.css";
 
 const API = (import.meta.env.VITE_API_URL || "/api/v1").replace(/\/$/, "");
 type View =
@@ -266,11 +267,11 @@ function App() {
                 Sign out
               </button>
             </>
-          ) : (
+          ) : view !== "home" ? (
             <button className="link" onClick={() => setView("login")}>
               Login
             </button>
-          )}
+          ) : null}
         </div>
       </header>
       {toast && (
@@ -323,18 +324,33 @@ function Home({ go }: { go: (v: View) => void }) {
             <button className="primary" onClick={() => go("library")}>
               Register a library <span>↗</span>
             </button>
-            <button className="text-action" onClick={() => go("login")}>
-              Explore your portal <span>→</span>
+            <button
+              className="text-action"
+              onClick={() => document.getElementById("libraryhub-features")?.scrollIntoView({ behavior: "smooth" })}
+            >
+              Explore LibraryHub <span>↓</span>
             </button>
           </div>
         </div>
         <div className="hero-art" aria-hidden="true">
+          <div className="hero-art-glow" />
+          <div className="hero-orbit orbit-one" />
+          <div className="hero-orbit orbit-two" />
           <div className="art-sun" />
           <div className="art-shelf shelf-one" />
           <div className="art-shelf shelf-two" />
           <div className="art-book book-one" />
           <div className="art-book book-two" />
           <div className="art-book book-three" />
+          <div className="art-library-card card-main">
+            <span className="card-kicker">TODAY'S FLOW</span>
+            <strong>42 <small>active readers</small></strong>
+            <span className="card-bar"><i /></span>
+          </div>
+          <div className="art-library-card card-mini">
+            <span className="mini-dot" />
+            <span>Seats in rhythm</span>
+          </div>
           <div className="art-note">
             Open
             <br />
@@ -345,7 +361,7 @@ function Home({ go }: { go: (v: View) => void }) {
         </div>
       </section>
       <section className="home-strip">
-        <span>Designed for daily flow</span>
+        <span><i className="strip-pulse" /> Designed for daily flow</span>
         <div>
           <span>01 / Seats</span>
           <span>02 / People</span>
@@ -374,8 +390,113 @@ function Home({ go }: { go: (v: View) => void }) {
           login={() => go("login")}
         />
       </section>
+      <FeatureShowcase />
+      <WhyLibraryHub />
+      <Faq />
+      <HowItWorks go={go} />
+      <footer className="home-footer">
+        <div className="footer-brand">
+          <span className="brand-mark">LH</span>
+          <div>
+            <strong>Library<span className="brand-accent">Hub</span></strong>
+            <span>One calmer place for every reader.</span>
+          </div>
+        </div>
+        <div className="footer-meta">
+          <span>Built for libraries, librarians, students and community.</span>
+          <span>© {new Date().getFullYear()} LibraryHub. All rights reserved.</span>
+        </div>
+      </footer>
     </>
   );
+}
+
+const features = [
+  ["▦", "Seat intelligence", "See every seat, shift and assignment at a glance."],
+  ["◒", "Payment clarity", "Keep fee records organized and easy to follow."],
+  ["◎", "Student space", "Give students a simple view of their seat and history."],
+  ["✦", "Community pulse", "Share posts, notices and useful updates in one place."],
+  ["✋", "Concerns, heard", "Bring questions directly to the people who can help."],
+  ["⌁", "Decisions in sync", "Help admins and librarians move requests forward."],
+] as const;
+
+function FeatureShowcase() {
+  return (
+    <section className="home-section feature-section" id="libraryhub-features">
+      <SectionIntro eyebrow="EVERYDAY ADVANTAGE" title="The details that make a library feel effortless." text="LibraryHub brings the quiet, important work into one clear rhythm, so people spend less time searching and more time reading." />
+      <div className="feature-grid">
+        {features.map(([icon, title, text], index) => (
+          <article className="feature-card" key={title} style={{ "--card-index": index } as CSSProperties}>
+            <span className="feature-icon" aria-hidden="true">{icon}</span>
+            <span className="feature-number">0{index + 1}</span>
+            <h3>{title}</h3>
+            <p>{text}</p>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function WhyLibraryHub() {
+  return (
+    <section className="why-section home-section">
+      <div className="why-statement">
+        <p className="eyebrow">WHY LIBRARYHUB</p>
+        <h2>A library is more than a room. It is a community in motion.</h2>
+        <p>That is why LibraryHub is designed for everyone in the loop. Librarians run the day, students find their place, admins keep standards high, and the community stays connected.</p>
+        <div className="why-signature"><span>LH</span><span>One shared rhythm<br /><strong>for every reader.</strong></span></div>
+      </div>
+      <div className="why-points">
+        <article><span className="point-icon">01</span><div><h3>Made for students too</h3><p>Students can see their assignment, payment record and essential updates without chasing information.</p></div></article>
+        <article><span className="point-icon">02</span><div><h3>Community is built in</h3><p>Notices, posts, comments and concerns turn a collection of desks into a place people belong.</p></div></article>
+        <article><span className="point-icon">03</span><div><h3>Clarity compounds</h3><p>When every role sees the right information, small daily decisions become noticeably easier.</p></div></article>
+      </div>
+    </section>
+  );
+}
+
+function Faq() {
+  const [open, setOpen] = useState(0);
+  const questions = [
+    ["Who is LibraryHub for?", "LibraryHub supports admins, librarians, students and the wider library community. Each role gets a focused space for the work and information that matters to them."],
+    ["Can students use the application directly?", "Yes. Students can sign in to view their seat assignment, payment history and communication from their library once their account is approved and assigned a seat."],
+    ["What can a librarian manage?", "Librarians can manage seats and shifts, assign or release students, record payments, review concerns and keep the community informed."],
+    ["How does the community area help?", "The community area brings posts, notices, comments and likes together, giving people a calm place to share updates and stay connected."],
+  ];
+  return (
+    <section className="home-section faq-section">
+      <SectionIntro eyebrow="GOOD TO KNOW" title="Questions, answered clearly." text="A few helpful details before you find your way in." />
+      <div className="faq-list">
+        {questions.map(([question, answer], index) => (
+          <div className={`faq-item ${open === index ? "is-open" : ""}`} key={question}>
+            <button className="faq-question" onClick={() => setOpen(open === index ? -1 : index)} aria-expanded={open === index}>
+              <span><i>0{index + 1}</i>{question}</span><strong>{open === index ? "−" : "+"}</strong>
+            </button>
+            <div className="faq-answer"><p>{answer}</p></div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function HowItWorks({ go }: { go: (v: View) => void }) {
+  return (
+    <section className="how-section home-section">
+      <SectionIntro eyebrow="A SIMPLE START" title="How it works." text="A clear path from first hello to a library that moves beautifully." />
+      <div className="how-steps">
+        <article><span className="step-mark">01</span><div><h3>Set up your space</h3><p>Register your library and tell us about the place you are building.</p></div></article>
+        <article><span className="step-mark">02</span><div><h3>Bring people in</h3><p>Approve librarians, welcome students and give each person the right view.</p></div></article>
+        <article><span className="step-mark">03</span><div><h3>Keep the rhythm</h3><p>Manage seats, payments, concerns and community updates from one calm desk.</p></div></article>
+      </div>
+      <div className="how-cta"><span>Ready to make more room for what matters?</span><button className="primary" onClick={() => go("library")}>Register your library <span>↗</span></button></div>
+    </section>
+  );
+}
+
+function SectionIntro({ eyebrow, title, text }: { eyebrow: string; title: string; text: string }) {
+  return <div className="section-intro"><p className="eyebrow">{eyebrow}</p><h2>{title}</h2><p>{text}</p></div>;
 }
 function Role({
   title,
