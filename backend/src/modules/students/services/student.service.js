@@ -34,7 +34,20 @@ const findByLibrary = async (library) => {
   const cached = await redis.get(key);
   if (cached) return cached;
   const students = await studentRepository.findByLibrary(library);
-  const result = students.map((student) => student.toObject());
+  const payments = await feeRepository.findByStudents(students.map((student) => student._id));
+  const latestPaymentByStudent = new Map();
+  payments.forEach((payment) => {
+    if (!latestPaymentByStudent.has(String(payment.student))) {
+      latestPaymentByStudent.set(String(payment.student), payment);
+    }
+  });
+  const result = students.map((student) => {
+    const { passwordHash, ...safeStudent } = student.toObject();
+    return {
+      ...safeStudent,
+      lastPaymentDate: latestPaymentByStudent.get(String(student._id))?.paidAt || null,
+    };
+  });
   await redis.set(key, result, 300);
   return result;
 };

@@ -963,6 +963,8 @@ function Librarian({ token }: { token: string }) {
   const [activeSection, setActiveSection] = useState<
     "seats" | "assign" | "payment" | "concerns"
   >("seats");
+  const [assignView, setAssignView] = useState<"history" | "pending" | "details">("pending");
+  const [studentSearch, setStudentSearch] = useState("");
   const [seats, setSeats] = useState<any[]>([]),
     [students, setStudents] = useState<any[]>([]),
     [concerns, setConcerns] = useState<any[]>([]),
@@ -1013,6 +1015,15 @@ function Librarian({ token }: { token: string }) {
     (student) =>
       !assignedStudentIds.has(String(student._id)) &&
       !historicalStudentIds.has(String(student._id)),
+  );
+  const studentAssignments = new Map<string, { seat: string; shift: string }>(
+    seats.flatMap((seat) => seat.assignments.map((assignment: any) => [
+      String(assignment.student._id),
+      { seat: seat.seatNumber, shift: assignment.shift.replace("_", " ") },
+    ])),
+  );
+  const filteredStudents = students.filter((student) =>
+    student.name.toLowerCase().includes(studentSearch.trim().toLowerCase()),
   );
   return (
     <Dashboard
@@ -1117,7 +1128,7 @@ function Librarian({ token }: { token: string }) {
               label="Select seat"
               options={seats.map((s) => [s._id, s.seatNumber])}
             />
-            <Select
+            <SearchableSelect
               value={assign.studentId}
               set={(v) => setAssign({ ...assign, studentId: v })}
               label="Select student"
@@ -1136,7 +1147,12 @@ function Librarian({ token }: { token: string }) {
               Assign student <span>→</span>
             </button>
           </form>
-          <div className="student-history">
+          <div className="assign-view-tabs" role="tablist" aria-label="Student records">
+            <button className={assignView === "history" ? "active" : ""} onClick={() => setAssignView("history")}>Student history</button>
+            <button className={assignView === "pending" ? "active" : ""} onClick={() => setAssignView("pending")}>Pending registrations</button>
+            <button className={assignView === "details" ? "active" : ""} onClick={() => setAssignView("details")}>Student details</button>
+          </div>
+          {assignView === "history" && <div className="student-history">
             <PanelHeading title="Student history" meta={`${studentHistory.length} former students`} />
             <Table
               heads={["Name", "Email", "Mobile", "Joined", "Left"]}
@@ -1148,9 +1164,9 @@ function Librarian({ token }: { token: string }) {
                 new Date(entry.leftAt).toLocaleDateString(),
               ])}
             />
-          </div>
-          <div className="student-history">
-            <PanelHeading title="Student registrations" meta={`${unassignedStudents.length} unassigned`} />
+          </div>}
+          {assignView === "pending" && <div className="student-history">
+            <PanelHeading title="Pending registrations" meta={`${unassignedStudents.length} awaiting seat`} />
             <Table
               heads={["Name", "Email", "Mobile", "Action"]}
               rows={unassignedStudents.map((student) => [
@@ -1172,7 +1188,47 @@ function Librarian({ token }: { token: string }) {
                 </button>,
               ])}
             />
-          </div>
+          </div>}
+          {assignView === "details" && <div className="student-history student-details-table">
+            <PanelHeading
+              title="Student details"
+              meta={studentSearch ? `${filteredStudents.length} of ${students.length} students` : `${students.length} students`}
+            />
+            <div className="student-search">
+              <input
+                type="search"
+                placeholder="Search student by name"
+                aria-label="Search student by name"
+                value={studentSearch}
+                onChange={(e) => setStudentSearch(e.target.value)}
+              />
+              {studentSearch && (
+                <button
+                  type="button"
+                  className="student-search-clear"
+                  onClick={() => setStudentSearch("")}
+                  aria-label="Clear student search"
+                >
+                  ×
+                </button>
+              )}
+            </div>
+            <Table
+              heads={["Name", "Email", "Mobile", "Seat", "Shift", "Last payment", "Status"]}
+              rows={filteredStudents.map((student) => {
+                const assignment = studentAssignments.get(String(student._id));
+                return [
+                  student.name,
+                  student.email,
+                  student.mobile,
+                  assignment?.seat || "Not assigned",
+                  assignment?.shift || "—",
+                  student.lastPaymentDate ? new Date(student.lastPaymentDate).toLocaleDateString() : "No payment",
+                  <Status value={historicalStudentIds.has(String(student._id)) ? "INACTIVE" : "ACTIVE"} />,
+                ];
+              })}
+            />
+          </div>}
       </section>}
       {activeSection === "payment" && <section className="panel librarian-panel">
           <PanelHeading title="Record payment" meta="Offline entry" />
@@ -1198,7 +1254,7 @@ function Librarian({ token }: { token: string }) {
               }
             }}
           >
-            <Select
+            <SearchableSelect
               value={fee.studentId}
               set={(v) => setFee({ ...fee, studentId: v })}
               label="Select student"
@@ -1286,6 +1342,68 @@ function Select({
         </option>
       ))}
     </select>
+  );
+}
+
+function SearchableSelect({
+  value,
+  set,
+  label,
+  options,
+}: {
+  value?: string;
+  set: (value: string) => void;
+  label: string;
+  options: string[][];
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const selected = options.find(([optionValue]) => optionValue === value);
+  const filteredOptions = options.filter(([, text]) =>
+    text.toLowerCase().includes(search.trim().toLowerCase()),
+  );
+
+  return (
+    <div className="searchable-select">
+      <input
+        required
+        readOnly
+        value={selected?.[1] || ""}
+        placeholder={label}
+        aria-label={label}
+        onClick={() => setOpen(true)}
+        onFocus={() => setOpen(true)}
+      />
+      {open && (
+        <div className="searchable-select-menu">
+          <input
+            autoFocus
+            type="search"
+            value={search}
+            placeholder="Search student..."
+            aria-label="Search student options"
+            onChange={(event) => setSearch(event.target.value)}
+          />
+          <div className="searchable-select-options">
+            {filteredOptions.length ? filteredOptions.map(([optionValue, text]) => (
+              <button
+                type="button"
+                className={optionValue === value ? "selected" : ""}
+                key={optionValue}
+                onClick={() => {
+                  set(optionValue);
+                  setSearch("");
+                  setOpen(false);
+                }}
+              >
+                {text}
+              </button>
+            )) : <span className="searchable-select-empty">No students found</span>}
+          </div>
+        </div>
+      )}
+      {open && <button type="button" className="searchable-select-backdrop" aria-label="Close student options" onClick={() => setOpen(false)} />}
+    </div>
   );
 }
 function Student({ token }: { token: string }) {

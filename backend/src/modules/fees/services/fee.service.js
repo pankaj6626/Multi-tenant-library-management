@@ -21,6 +21,7 @@ const record = async (libraryId, studentId, amount, paidAt, recordedBy) => {
     recordedBy,
   });
   await redis.del(`library:seats:${libraryId}`);
+  await redis.del(`library:students:${libraryId}`);
   await notificationService.notify({
     recipient: student._id,
     recipientRole: 'STUDENT',
