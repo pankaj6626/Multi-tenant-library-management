@@ -25,6 +25,8 @@ Access tokens expire after 30 minutes. `POST /api/v1/auth/refresh` rotates the r
 
 API errors use a consistent JSON shape with `success: false`, a user-safe `message`, a stable `code`, and a `requestId` for tracing. Validation errors may include a `details` object. Clients should display `message` and retain `requestId` for support diagnostics; server stack traces and sensitive values are never returned.
 
+Authenticated students and librarians can use `GET /api/v1/notifications` to load their latest 50 notifications. Use `PATCH /api/v1/notifications/:id/read` for an individual notification or `PATCH /api/v1/notifications/read-all` to clear the unread state. Notifications are created for seat assignments, payments, resolved concerns, notices, student registrations, and 30-day fee reminders.
+
 ```json
 {
 	"success": false,

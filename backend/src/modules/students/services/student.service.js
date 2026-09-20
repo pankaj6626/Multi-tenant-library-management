@@ -4,6 +4,8 @@ import redis from '../../../config/redis.js';
 import * as concernRepository from '../../concerns/repositories/concern.repository.js';
 import feeRepository from '../../fees/repositories/fee.repository.js';
 import * as libraryService from '../../libraries/services/library.service.js';
+import librarianRepository from '../../librarians/repositories/librarian.repository.js';
+import * as notificationService from '../../notifications/services/notification.service.js';
 import seatRepository from '../../seats/repositories/seat.repository.js';
 import studentRepository from '../repositories/student.repository.js';
 import * as studentHistoryRepository from '../repositories/student-history.repository.js';
@@ -15,6 +17,15 @@ const register = async ({ libraryCode, name, email, password, confirmPassword, m
   const library = await libraryService.findApprovedByCode(libraryCode);
   const student = await studentRepository.create({ library: library._id, name, email, passwordHash: hashPassword(password), mobile });
   await redis.del(`library:students:${library._id}`);
+  const librarians = await librarianRepository.findByLibrary(library._id);
+  await notificationService.notifyMany(librarians.map(({ _id: recipient }) => recipient), {
+    recipientRole: 'LIBRARIAN',
+    library: library._id,
+    type: 'STUDENT_REGISTERED',
+    title: 'New student registration',
+    message: `${student.name} registered for your library.`,
+    eventKey: `student-registered:${student._id}:librarian`,
+  });
   return student;
 };
 
@@ -40,6 +51,19 @@ const profile = async (studentId) => {
     feeRepository.findByStudent(student._id),
     concernRepository.findByStudent(student._id),
   ]);
+  const latestPayment = payments[0];
+  const feeDueFrom = latestPayment?.paidAt || student.createdAt;
+  if (new Date(feeDueFrom) < new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)) {
+    await notificationService.notify({
+      recipient: student._id,
+      recipientRole: 'STUDENT',
+      library: student.library._id,
+      type: 'FEE_OVERDUE',
+      title: 'Fee timeline passed',
+      message: 'Your fee has passed the 30-day timeline.',
+      eventKey: `fee-overdue:${student._id}:${new Date(feeDueFrom).getTime()}:student`,
+    });
+  }
   return { student, seat, payments, concerns };
 };
 

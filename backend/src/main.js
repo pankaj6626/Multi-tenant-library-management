@@ -18,6 +18,7 @@ import seatController from './modules/seats/controllers/seat.controller.js';
 import feeController from './modules/fees/controllers/fee.controller.js';
 import concernController from './modules/concerns/controllers/concern.controller.js';
 import communityController from './modules/community/controllers/community.controller.js';
+import notificationController from './modules/notifications/controllers/notification.controller.js';
 
 import './events/consumers/audit.consumer.js';
 
@@ -70,6 +71,7 @@ app.use(`${apiPrefix}/seats`, seatController);
 app.use(apiPrefix, feeController);
 app.use(`${apiPrefix}/concerns`, concernController);
 app.use(`${apiPrefix}/communication`, communityController);
+app.use(`${apiPrefix}/notifications`, notificationController);
 
 app.use(errorHandler);
 

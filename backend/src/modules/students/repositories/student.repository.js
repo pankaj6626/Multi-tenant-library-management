@@ -6,6 +6,7 @@ export default {
   findProfile: (id) =>
     Student.findById(id).populate("library", "name libraryCode"),
   findByLibrary: (library) => Student.find({ library }).sort("name"),
+  findIdsByLibrary: (library) => Student.find({ library }).select('_id'),
   findOne: (query) => Student.findOne(query),
   deleteOne: (query) => Student.deleteOne(query),
 };

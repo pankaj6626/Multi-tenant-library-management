@@ -1,4 +1,5 @@
 import HttpError from '../../../common/exceptions/http-error.js';
+import * as notificationService from '../../notifications/services/notification.service.js';
 
 const createSeatAssignmentService = ({ seatRepository, studentRepository, studentHistoryRepository, seatCache }) => {
   const assign = async (libraryId, seatId, studentId, shift) => {
@@ -12,6 +13,15 @@ const createSeatAssignmentService = ({ seatRepository, studentRepository, studen
     if (!result) throw new HttpError('This shift is already occupied', 409);
     await seatRepository.removeStudentAssignments(libraryId, student._id, seatId);
     await seatCache.invalidate(libraryId);
+    await notificationService.notify({
+      recipient: student._id,
+      recipientRole: 'STUDENT',
+      library: libraryId,
+      type: 'SEAT_ASSIGNED',
+      title: 'Seat assigned',
+      message: `You have been assigned ${seat.seatNumber}, ${shift.replace('_', ' ')}.`,
+      eventKey: `seat-assigned:${result._id}:${student._id}:${shift}:${result.updatedAt?.getTime() || Date.now()}`,
+    });
     return result;
   };
 

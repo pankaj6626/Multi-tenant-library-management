@@ -2,9 +2,19 @@ import HttpError from '../../../common/exceptions/http-error.js';
 import { publish } from '../../../events/publishers/event.publisher.js';
 import events from '../../../events/event-types/domain-events.js';
 import libraryRepository from '../repositories/library.repository.js';
+import * as notificationService from '../../notifications/services/notification.service.js';
 
 const create = async (libraryData) => {
   const library = await libraryRepository.create(libraryData);
+  await notificationService.notify({
+    recipient: 'admin',
+    recipientRole: 'ADMIN',
+    library: library._id,
+    type: 'LIBRARY_REGISTERED',
+    title: 'New library registration',
+    message: `${library.name} submitted a library registration for review.`,
+    eventKey: `library-registered:${library._id}:admin`,
+  });
   publish(events.LIBRARY_REGISTERED, { libraryId: library._id });
   return library;
 };

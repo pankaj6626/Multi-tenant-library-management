@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties, type FormEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type FormEvent, type ReactNode } from "react";
 import "./App.css";
 import "./premium.css";
 
@@ -19,6 +19,33 @@ type AuthSession = {
   accessToken: string;
   role: string;
   seatAssigned?: boolean;
+};
+type NotificationItem = {
+  _id: string;
+  type: string;
+  title: string;
+  message: string;
+  readAt: string | null;
+  createdAt: string;
+};
+
+const formatDateTime = (value: string) => new Date(value).toLocaleString(
+  undefined,
+  { dateStyle: "medium", timeStyle: "short" },
+);
+
+const formatRelativeTime = (value: string) => {
+  const elapsedSeconds = Math.max(0, Math.floor((Date.now() - new Date(value).getTime()) / 1000));
+  if (elapsedSeconds < 60) return `${elapsedSeconds}s`;
+  const minutes = Math.floor(elapsedSeconds / 60);
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `${days}d`;
+  const months = Math.floor(days / 30);
+  if (months < 12) return `${months}mo`;
+  return `${Math.floor(months / 12)}y`;
 };
 type ApiErrorBody = {
   message?: string;
@@ -260,6 +287,9 @@ function App() {
               {view === "community" ? "Dashboard" : "Community"}
             </button>
           )}
+          {token && (role === "ADMIN" || role === "LIBRARIAN" || role === "STUDENT") && (
+            <NotificationBell token={token} />
+          )}
           {token ? (
             <>
               <span className="role-pill">{role}</span>
@@ -309,6 +339,103 @@ function App() {
     </main>
   );
 }
+
+function NotificationBell({ token }: { token: string }) {
+  const [open, setOpen] = useState(false);
+  const [items, setItems] = useState<NotificationItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const notificationRef = useRef<HTMLDivElement>(null);
+  const unreadCount = items.filter((item) => !item.readAt).length;
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      setItems(await api<NotificationItem[]>("/notifications", "GET", undefined, token));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    load().catch(() => undefined);
+  }, [token]);
+
+  useEffect(() => {
+    if (!open) return;
+    const closeOnOutsidePointer = (event: PointerEvent) => {
+      const target = event.target as HTMLElement;
+      if (!notificationRef.current?.contains(target)
+        || !target.closest(".notification-bell, .notification-panel")) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("pointerdown", closeOnOutsidePointer);
+    return () => document.removeEventListener("pointerdown", closeOnOutsidePointer);
+  }, [open]);
+
+  const markRead = async (id: string) => {
+    try {
+      await api(`/notifications/${id}/read`, "PATCH", undefined, token);
+      setItems((current) => current.map((item) => (
+        item._id === id ? { ...item, readAt: new Date().toISOString() } : item
+      )));
+    } catch {
+      // The notification remains visible if marking it read fails.
+    }
+  };
+
+  const markAllRead = async () => {
+    try {
+      await api("/notifications/read-all", "PATCH", undefined, token);
+      setItems((current) => current.map((item) => ({
+        ...item,
+        readAt: item.readAt || new Date().toISOString(),
+      })));
+    } catch {
+      // Keep the unread state when the server cannot be reached.
+    }
+  };
+
+  return (
+    <div className="notification-center" ref={notificationRef}>
+      <button
+        className="notification-bell"
+        onClick={() => setOpen((current) => !current)}
+        aria-label={`Notifications${unreadCount ? `, ${unreadCount} unread` : ""}`}
+        aria-expanded={open}
+        title="Notifications"
+      >
+        <span aria-hidden="true">🔔</span>
+        {unreadCount > 0 && <b>{unreadCount > 9 ? "9+" : unreadCount}</b>}
+      </button>
+      {open && (
+        <section className="notification-panel" aria-label="Notifications">
+          <header>
+            <div><p className="eyebrow">YOUR UPDATES</p><h2>Notifications</h2></div>
+            {unreadCount > 0 && <button className="notification-read-all" onClick={markAllRead}>Mark all read</button>}
+          </header>
+          {loading ? <p className="notification-empty">Loading updates...</p> : items.length === 0 ? (
+            <p className="notification-empty">You are all caught up.</p>
+          ) : (
+            <div className="notification-list">
+              {items.map((item) => (
+                <button
+                  className={`notification-item ${item.readAt ? "read" : "unread"}`}
+                  key={item._id}
+                  onClick={() => markRead(item._id)}
+                >
+                  <span className="notification-mark">{item.readAt ? "·" : "•"}</span>
+                  <span><strong>{item.title}</strong><small>{item.message}</small><time>{formatDateTime(item.createdAt)}</time></span>
+                </button>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+    </div>
+  );
+}
+
 function Home({ go }: { go: (v: View) => void }) {
   return (
     <>
@@ -850,6 +977,7 @@ function Librarian({ token }: { token: string }) {
         api("/libraries/students", "GET", undefined, token),
         api("/concerns", "GET", undefined, token),
         api("/libraries/students/history", "GET", undefined, token),
+        api("/fees/pending", "GET", undefined, token),
       ]);
       setSeats(a);
       setStudents(b);
@@ -1383,8 +1511,9 @@ function CommunicationPortal({
               </button>
             </form>
           )}
-          {posts.length ? (
-            posts.map((post) => (
+          <div className="post-feed" aria-label="Community posts">
+            {posts.length ? (
+              posts.map((post) => (
               <article className="post-card" key={post._id}>
                 <div className="post-meta">
                   <span className="avatar">
@@ -1393,7 +1522,7 @@ function CommunicationPortal({
                   <span>
                     <strong>{post.author?.name || "Student"}</strong>
                     <small>
-                      {new Date(post.createdAt).toLocaleDateString()}
+                      {formatDateTime(post.createdAt)}
                     </small>
                   </span>
                   {role === "LIBRARIAN" && (
@@ -1423,7 +1552,15 @@ function CommunicationPortal({
                         {comment.author?.name?.charAt(0) || "S"}
                       </span>
                       <p>
-                        <strong>{comment.author?.name || "Student"}</strong>
+                        <strong>
+                          {comment.author?.name || "Student"}
+                          <small
+                            className="comment-relative-time"
+                            title={formatDateTime(comment.createdAt)}
+                          >
+                            {formatRelativeTime(comment.createdAt)}
+                          </small>
+                        </strong>
                         {comment.message}
                       </p>
                       {role === "LIBRARIAN" && (
@@ -1461,14 +1598,15 @@ function CommunicationPortal({
                     </form>
                   )}
                 </div>
-              </article>
-            ))
-          ) : (
-            <div className="empty-state">
-              <strong>The community is quiet.</strong>
-              <span>Be the first to share something worth knowing.</span>
-            </div>
-          )}
+                </article>
+              ))
+            ) : (
+              <div className="empty-state">
+                <strong>The community is quiet.</strong>
+                <span>Be the first to share something worth knowing.</span>
+              </div>
+            )}
+          </div>
         </div>
         <aside className="notice-board">
           <div className="notice-board-heading">
@@ -1485,7 +1623,7 @@ function CommunicationPortal({
                   <h3>{notice.title}</h3>
                   <p>{notice.content}</p>
                   <small>
-                    {new Date(notice.createdAt).toLocaleDateString()}
+                    {formatDateTime(notice.createdAt)}
                   </small>
                 </div>
                 {role === "LIBRARIAN" && (
