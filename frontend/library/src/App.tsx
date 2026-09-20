@@ -14,6 +14,26 @@ type View =
   | "community";
 type Values = Record<string, string>;
 type Toast = { message: string; kind: "success" | "error" };
+type AuthSession = {
+  accessToken: string;
+  role: string;
+  seatAssigned?: boolean;
+};
+
+let accessToken = "";
+
+const setAccessToken = (token: string) => {
+  accessToken = token;
+};
+
+async function refreshAccessToken(): Promise<AuthSession> {
+  const res = await fetch(`${API}/auth/refresh`, {
+    method: "POST",
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error("Session expired");
+  return res.json();
+}
 
 async function api(
   path: string,
@@ -21,14 +41,25 @@ async function api(
   body?: unknown,
   token?: string,
 ) {
-  const res = await fetch(`${API}${path}`, {
+  const request = (requestToken: string) => fetch(`${API}${path}`, {
     method,
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(requestToken ? { Authorization: `Bearer ${requestToken}` } : {}),
     },
     ...(body ? { body: JSON.stringify(body) } : {}),
   });
+  let res = await request(accessToken || token || "");
+  if (res.status === 401 && !path.startsWith("/auth/")) {
+    try {
+      const refreshed = await refreshAccessToken();
+      setAccessToken(refreshed.accessToken);
+      res = await request(refreshed.accessToken);
+    } catch {
+      window.dispatchEvent(new Event("library-auth-expired"));
+    }
+  }
   const contentType = res.headers.get("content-type") || "";
   const data =
     res.status === 204
@@ -62,27 +93,19 @@ async function api(
 }
 
 function App() {
-  const [token, setToken] = useState(
-    localStorage.getItem("libraryToken") || "",
-  );
-  const [role, setRole] = useState(localStorage.getItem("libraryRole") || "");
-  const [seatAssigned, setSeatAssigned] = useState(
-    localStorage.getItem("librarySeatAssigned") === "true",
-  );
-  const [view, setView] = useState<View>(
-    role === "ADMIN"
-      ? "admin"
-      : role === "LIBRARIAN"
-        ? "librarian"
-        : role === "STUDENT"
-          ? "student"
-          : "home",
-  );
+  const [token, setToken] = useState("");
+  const [role, setRole] = useState("");
+  const [seatAssigned, setSeatAssigned] = useState(false);
+  const [view, setView] = useState<View>("home");
   const [theme, setTheme] = useState<"light" | "dark">(
     () => (localStorage.getItem("libraryTheme") as "light" | "dark") || "light",
   );
   const [toast, setToast] = useState<Toast | null>(null);
 
+  useEffect(() => {
+    localStorage.removeItem("libraryToken");
+    sessionStorage.removeItem("libraryToken");
+  }, []);
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
     localStorage.setItem("libraryTheme", theme);
@@ -96,6 +119,17 @@ function App() {
     return () => window.removeEventListener("library-toast", handleToast);
   }, []);
   useEffect(() => {
+    const handleExpiredSession = () => {
+      setAccessToken("");
+      setToken("");
+      setRole("");
+      setSeatAssigned(false);
+      setView("home");
+    };
+    window.addEventListener("library-auth-expired", handleExpiredSession);
+    return () => window.removeEventListener("library-auth-expired", handleExpiredSession);
+  }, []);
+  useEffect(() => {
     if (!toast) return;
     const timer = window.setTimeout(() => setToast(null), 4500);
     return () => window.clearTimeout(timer);
@@ -106,30 +140,17 @@ function App() {
       .then((profile) => {
         const assigned = Boolean(profile.seat);
         setSeatAssigned(assigned);
-        localStorage.setItem("librarySeatAssigned", String(assigned));
       })
       .catch(() => setSeatAssigned(false));
   }, [token, role]);
   const showToast = (message: string, kind: Toast["kind"] = "success") =>
     setToast({ message, kind });
-  const logout = () => {
-    localStorage.removeItem("libraryToken");
-    localStorage.removeItem("libraryRole");
-    localStorage.removeItem("librarySeatAssigned");
-    setToken("");
-    setRole("");
-    setSeatAssigned(false);
-    setView("home");
-    showToast("You have been signed out.");
-  };
-  const loggedIn = (data: { token: string; role: string; seatAssigned?: boolean }) => {
-    setToken(data.token);
+  const applySession = (data: AuthSession, notify = true) => {
+    setAccessToken(data.accessToken);
+    setToken(data.accessToken);
     setRole(data.role);
     const assigned = data.role !== "STUDENT" || data.seatAssigned === true;
     setSeatAssigned(assigned);
-    localStorage.setItem("libraryToken", data.token);
-    localStorage.setItem("libraryRole", data.role);
-    localStorage.setItem("librarySeatAssigned", String(assigned));
     setView(
       data.role === "ADMIN"
         ? "admin"
@@ -137,8 +158,41 @@ function App() {
           ? "librarian"
           : "student",
     );
-    showToast("Login successful.");
+    if (notify) showToast("Login successful.");
   };
+  useEffect(() => {
+    refreshAccessToken()
+      .then((session) => {
+        setAccessToken(session.accessToken);
+        setToken(session.accessToken);
+        setRole(session.role);
+        setSeatAssigned(session.role !== "STUDENT" || session.seatAssigned === true);
+        setView(
+          session.role === "ADMIN"
+            ? "admin"
+            : session.role === "LIBRARIAN"
+              ? "librarian"
+              : "student",
+        );
+      })
+      .catch(() => undefined);
+  }, []);
+  const logout = async () => {
+    try {
+      await api("/auth/logout", "POST");
+    } catch {
+      // Clear local state even when the server is unavailable.
+    }
+    setAccessToken("");
+    setToken("");
+    localStorage.removeItem("libraryRole");
+    localStorage.removeItem("librarySeatAssigned");
+    setRole("");
+    setSeatAssigned(false);
+    setView("home");
+    showToast("You have been signed out.");
+  };
+  const loggedIn = (data: AuthSession) => applySession(data);
   return (
     <main className="app">
       <header className="topbar">
@@ -458,7 +512,7 @@ const StudentForm = ({
 function Login({
   done,
 }: {
-  done: (x: { token: string; role: string }) => void;
+  done: (x: AuthSession) => void;
 }) {
   return (
     <Form

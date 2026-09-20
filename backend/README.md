@@ -17,7 +17,9 @@ and server-to-server calls.
 
 ## Authentication
 
-Use `POST /api/v1/auth/login` with `email`, `password`, and `libraryCode` for librarians and students. The admin uses `ADMIN_EMAIL` and `ADMIN_PASSWORD` from `.env` and does not need a library code. Send the returned token as `Authorization: Bearer <token>`.
+Use `POST /api/v1/auth/login` with `email`, `password`, and `libraryCode` for librarians and students. The admin uses `ADMIN_EMAIL` and `ADMIN_PASSWORD` from `.env` and does not need a library code. The response contains a short-lived `accessToken`; send it as `Authorization: Bearer <accessToken>`. The refresh token is set as an HttpOnly cookie and is never returned to the browser JavaScript runtime.
+
+Access tokens expire after 30 minutes. `POST /api/v1/auth/refresh` rotates the refresh cookie and returns a new access token; clients must send credentials/cookies with this request. `POST /api/v1/auth/logout` revokes the refresh session and clears the cookie, so it does not require an access token. Configure `FRONTEND_URL` for credentialed cross-origin requests in production.
 
 ## Main endpoints
 

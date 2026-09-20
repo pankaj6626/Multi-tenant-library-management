@@ -4,7 +4,7 @@ const protect = (req, res, next) => {
     const token = req.headers.authorization?.replace("Bearer ", "");
     if (!token)
       return res.status(401).json({ message: "Authentication required" });
-    req.user = verifyToken(token);
+    req.user = verifyToken(token, 'access');
     next();
   } catch {
     res.status(401).json({ message: "Invalid or expired token" });

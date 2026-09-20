@@ -12,13 +12,13 @@ const verifyPassword = (password, savedHash) => {
     Buffer.from(savedKey, "hex"),
   );
 };
-const signToken = (payload) => {
+const signToken = (payload, expiresInMs, type) => {
   const body = base64url(
-    JSON.stringify({ ...payload, exp: Date.now() + 86400000 }),
+    JSON.stringify({ ...payload, type, exp: Date.now() + expiresInMs }),
   );
   return `${body}.${crypto.createHmac("sha256", process.env.JWT_SECRET).update(body).digest("base64url")}`;
 };
-const verifyToken = (token) => {
+const verifyToken = (token, expectedType) => {
   const [body, signature] = token.split(".");
   const expected = crypto
     .createHmac("sha256", process.env.JWT_SECRET)
@@ -27,11 +27,13 @@ const verifyToken = (token) => {
   if (
     !body ||
     !signature ||
+    signature.length !== expected.length ||
     !crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))
   )
     throw new Error("Invalid token");
   const payload = JSON.parse(Buffer.from(body, "base64url").toString());
   if (payload.exp < Date.now()) throw new Error("Token expired");
+  if (expectedType && payload.type !== expectedType) throw new Error("Invalid token type");
   return payload;
 };
 export { hashPassword, verifyPassword, signToken, verifyToken };
