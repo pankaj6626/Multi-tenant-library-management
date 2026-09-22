@@ -332,7 +332,7 @@ function App() {
       {view === "login" && <Login done={loggedIn} />}{" "}
       {view === "admin" && <Admin token={token} />}{" "}
       {view === "librarian" && <Librarian token={token} />}{" "}
-      {view === "student" && <Student token={token} />}{" "}
+      {view === "student" && <Student token={token} />} {" "}
       {view === "community" && (
         <CommunicationPortal
           token={token}
@@ -1028,6 +1028,28 @@ function Librarian({ token }: { token: string }) {
   const filteredStudents = students.filter((student) =>
     student.name.toLowerCase().includes(studentSearch.trim().toLowerCase()),
   );
+  const pendingConcerns = concerns.filter((concern) => concern.status === "OPEN");
+  const resolvedConcerns = concerns.filter((concern) => concern.status !== "OPEN");
+  const concernHeads = ["Student", "Mobile", "Concern", "Status", ""];
+  const concernRows = (items: any[]) => items.map((c) => [
+    c.student?.name,
+    c.student?.mobile,
+    c.message,
+    <Status value={c.status} />,
+    c.status === "OPEN" ? (
+      <button
+        className="outline small"
+        onClick={async () => {
+          await api(`/concerns/${c._id}/resolve`, "PATCH", {}, token);
+          load();
+        }}
+      >
+        Resolve
+      </button>
+    ) : (
+      ""
+    ),
+  ]);
   return (
     <Dashboard
       title="Good morning, librarian"
@@ -1217,13 +1239,14 @@ function Librarian({ token }: { token: string }) {
               )}
             </div>
             <Table
-              heads={["Name", "Email", "Mobile", "Seat", "Shift", "Last payment", "Status"]}
+              heads={["Name", "Email", "Mobile", "Joined", "Seat", "Shift", "Last payment", "Status"]}
               rows={filteredStudents.map((student) => {
                 const assignment = studentAssignments.get(String(student._id));
                 return [
                   student.name,
                   student.email,
                   student.mobile,
+                  student.createdAt ? new Date(student.createdAt).toLocaleDateString() : "Unknown",
                   assignment?.seat || "Not assigned",
                   assignment?.shift || "—",
                   student.lastPaymentDate ? new Date(student.lastPaymentDate).toLocaleDateString() : "No payment",
@@ -1283,30 +1306,18 @@ function Librarian({ token }: { token: string }) {
       {activeSection === "concerns" && <section className="panel librarian-panel">
         <PanelHeading
           title="Student concerns"
-          meta={`${concerns.filter((x) => x.status === "OPEN").length} open`}
+          meta={`${pendingConcerns.length} pending`}
         />
-        <Table
-          heads={["Student", "Mobile", "Concern", "Status", ""]}
-          rows={concerns.map((c) => [
-            c.student?.name,
-            c.student?.mobile,
-            c.message,
-            <Status value={c.status} />,
-            c.status === "OPEN" ? (
-              <button
-                className="outline small"
-                onClick={async () => {
-                  await api(`/concerns/${c._id}/resolve`, "PATCH", {}, token);
-                  load();
-                }}
-              >
-                Resolve
-              </button>
-            ) : (
-              ""
-            ),
-          ])}
-        />
+        <div className="concern-feed" aria-label="Student concerns list">
+          <div className="concern-group">
+            <PanelHeading title="Pending concerns" meta={`${pendingConcerns.length} to review`} />
+            <Table heads={concernHeads} rows={concernRows(pendingConcerns)} />
+          </div>
+          <div className="concern-group">
+            <PanelHeading title="Resolved concerns" meta={`${resolvedConcerns.length} resolved`} />
+            <Table heads={concernHeads} rows={concernRows(resolvedConcerns)} />
+          </div>
+        </div>
       </section>}
       <nav className="librarian-footer-tabs" aria-label="Librarian dashboard sections">
         <button className={activeSection === "seats" ? "active" : ""} onClick={() => setActiveSection("seats")}>
@@ -1409,10 +1420,31 @@ function SearchableSelect({
     </div>
   );
 }
+type StudyGoal = { id: string; date: string; title: string; completed: boolean };
+type StickyNote = { id: string; text: string; color: string };
+const noteColors = ["yellow", "pink", "blue", "green", "lavender"];
+
+const getToday = () => {
+  const date = new Date();
+  const timezoneOffset = date.getTimezoneOffset() * 60000;
+  return new Date(date.getTime() - timezoneOffset).toISOString().slice(0, 10);
+};
+
 function Student({ token }: { token: string }) {
+  const [activeSection, setActiveSection] = useState<"seat" | "payment" | "concerns" | "goals">("seat");
   const [data, setData] = useState<any>(),
     [message, setMessage] = useState(""),
-    [error, setError] = useState("");
+    [error, setError] = useState(""),
+    [goalDate, setGoalDate] = useState(getToday),
+    [goalTitle, setGoalTitle] = useState(""),
+    [goals, setGoals] = useState<StudyGoal[]>([]),
+    [goalsLoaded, setGoalsLoaded] = useState(false),
+    [noteText, setNoteText] = useState(""),
+    [noteColor, setNoteColor] = useState(noteColors[0]),
+    [notes, setNotes] = useState<StickyNote[]>([]),
+    [notesLoaded, setNotesLoaded] = useState(false),
+    [timerSeconds, setTimerSeconds] = useState(45 * 60),
+    [timerRunning, setTimerRunning] = useState(false);
   const load = async () => {
     try {
       setData(await api("/students/me", "GET", undefined, token));
@@ -1423,6 +1455,45 @@ function Student({ token }: { token: string }) {
   useEffect(() => {
     load();
   }, []);
+  useEffect(() => {
+    if (!data?.student?._id) return;
+    const savedGoals = localStorage.getItem(`studyGoals:${data.student._id}`);
+    if (savedGoals) {
+      const parsedGoals = JSON.parse(savedGoals) as Partial<StudyGoal>[];
+      setGoals(parsedGoals.map((goal) => ({
+        id: goal.id || crypto.randomUUID(),
+        date: goal.date || getToday(),
+        title: goal.title || "Untitled goal",
+        completed: Boolean(goal.completed),
+      })));
+    }
+    setGoalsLoaded(true);
+    const savedNotes = localStorage.getItem(`stickyNotes:${data.student._id}`);
+    if (savedNotes) setNotes(JSON.parse(savedNotes) as StickyNote[]);
+    setNotesLoaded(true);
+  }, [data?.student?._id]);
+  useEffect(() => {
+    if (!data?.student?._id || !goalsLoaded) return;
+    localStorage.setItem(`studyGoals:${data.student._id}`, JSON.stringify(goals));
+  }, [data?.student?._id, goals, goalsLoaded]);
+  useEffect(() => {
+    if (!data?.student?._id || !notesLoaded) return;
+    localStorage.setItem(`stickyNotes:${data.student._id}`, JSON.stringify(notes));
+  }, [data?.student?._id, notes, notesLoaded]);
+  useEffect(() => {
+    if (!timerRunning) return;
+    const timer = window.setInterval(() => {
+      setTimerSeconds((seconds) => {
+        if (seconds <= 1) {
+          setTimerRunning(false);
+          notifySuccess("Study session complete. Take a short break.");
+          return 0;
+        }
+        return seconds - 1;
+      });
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [timerRunning]);
   if (!data)
     return (
       <Dashboard
@@ -1442,6 +1513,30 @@ function Student({ token }: { token: string }) {
       setError(x instanceof Error ? x.message : "Could not send concern");
     }
   };
+  const addGoal = (e: FormEvent) => {
+    e.preventDefault();
+    const title = goalTitle.trim();
+    if (!title) return;
+    setGoals([...goals, { id: crypto.randomUUID(), date: goalDate, title, completed: false }]);
+    setGoalTitle("");
+  };
+  const toggleGoal = (id: string) => {
+    setGoals(goals.map((goal) => goal.id === id ? { ...goal, completed: !goal.completed } : goal));
+  };
+  const deleteGoal = (id: string) => {
+    setGoals(goals.filter((goal) => goal.id !== id));
+  };
+  const goalsForDate = goals.filter((goal) => goal.date === goalDate);
+  const addNote = (e: FormEvent) => {
+    e.preventDefault();
+    const text = noteText.trim();
+    if (!text) return;
+    setNotes([{ id: crypto.randomUUID(), text, color: noteColor }, ...notes]);
+    setNoteText("");
+  };
+  const deleteNote = (id: string) => setNotes(notes.filter((note) => note.id !== id));
+  const minutes = String(Math.floor(timerSeconds / 60)).padStart(2, "0");
+  const seconds = String(timerSeconds % 60).padStart(2, "0");
   return (
     <Dashboard
       title={`Welcome, ${data.student.name}`}
@@ -1449,7 +1544,7 @@ function Student({ token }: { token: string }) {
       kicker="STUDENT SPACE"
       error={error}
     >
-      <div className="student-grid">
+      {activeSection === "seat" && <div className="student-grid">
         <section className="panel feature-panel">
           <PanelHeading title="Your seat" meta="Current assignment" />
           <p className="seat-number">
@@ -1470,8 +1565,8 @@ function Student({ token }: { token: string }) {
             <p className="muted">No payment recorded yet.</p>
           )}
         </section>
-      </div>
-      <section className="panel">
+      </div>}
+      {activeSection === "payment" && <section className="panel">
         <PanelHeading
           title="Payment history"
           meta={`${data.payments.length} records`}
@@ -1483,8 +1578,8 @@ function Student({ token }: { token: string }) {
             new Date(p.paidAt).toLocaleDateString(),
           ])}
         />
-      </section>
-      {data.seat ? (
+      </section>}
+      {activeSection === "concerns" && (data.seat ? (
         <section className="panel concern-panel">
           <PanelHeading title="Need a hand?" meta="Message your librarian" />
           <form className="concern-form" onSubmit={send}>
@@ -1504,7 +1599,112 @@ function Student({ token }: { token: string }) {
           <PanelHeading title="Seat assignment pending" meta="Access limited" />
           <p className="muted">Community access and concerns become available after a librarian assigns your seat.</p>
         </section>
-      )}
+      ))}
+      {activeSection === "goals" && <section className="panel study-panel">
+        <PanelHeading
+          title="Study goals"
+          meta={`${goalsForDate.filter((goal) => goal.completed).length}/${goalsForDate.length} complete`}
+        />
+        <div className="study-tools">
+          <div className="focus-timer">
+            <p className="eyebrow">FOCUS SESSION</p>
+            <strong>{minutes}:{seconds}</strong>
+            <div className="timer-actions">
+              <button className="primary small" onClick={() => setTimerRunning(!timerRunning)}>
+                {timerRunning ? "Pause" : "Start"} <span>{timerRunning ? "Ⅱ" : "▶"}</span>
+              </button>
+              <button className="outline small" onClick={() => { setTimerRunning(false); setTimerSeconds(45 * 60); }}>
+                Reset
+              </button>
+            </div>
+          </div>
+          <div className="goal-list">
+            <form className="goal-form" onSubmit={addGoal}>
+              <input
+                required
+                type="date"
+                value={goalDate}
+                onChange={(e) => setGoalDate(e.target.value)}
+                aria-label="Target date"
+              />
+              <input
+                required
+                maxLength={120}
+                placeholder="Add today's target"
+                value={goalTitle}
+                onChange={(e) => setGoalTitle(e.target.value)}
+              />
+              <button className="outline small">Add goal</button>
+            </form>
+            {goalsForDate.length ? goalsForDate.map((goal) => (
+              <label className={`study-goal ${goal.completed ? "completed" : ""}`} key={goal.id}>
+                <input type="checkbox" checked={goal.completed} onChange={() => toggleGoal(goal.id)} />
+                <span>{goal.title}</span>
+                <button type="button" className="study-goal-delete" onClick={() => deleteGoal(goal.id)} aria-label={`Delete ${goal.title}`} title="Delete target">
+                  ×
+                </button>
+              </label>
+            )) : <p className="muted">Set a target for this date and make a start.</p>}
+          </div>
+        </div>
+        <div className="sticky-notes">
+          <div className="sticky-notes-heading">
+            <div>
+              <p className="eyebrow">QUICK NOTES</p>
+              <h3>Keep useful thoughts close</h3>
+            </div>
+            <span className="sticky-notes-count">{notes.length} notes</span>
+          </div>
+          <form className="sticky-note-form" onSubmit={addNote}>
+            <textarea
+              required
+              maxLength={280}
+              value={noteText}
+              onChange={(e) => setNoteText(e.target.value)}
+              placeholder="Write a useful reminder, quote or idea..."
+            />
+            <div className="sticky-note-actions">
+              <div className="note-colors" aria-label="Choose note color">
+                {noteColors.map((color) => (
+                  <button
+                    type="button"
+                    key={color}
+                    className={`note-color ${color} ${noteColor === color ? "selected" : ""}`}
+                    onClick={() => setNoteColor(color)}
+                    aria-label={`${color} note`}
+                    title={`${color} note`}
+                  />
+                ))}
+              </div>
+              <button className="primary small">Add note <span>＋</span></button>
+            </div>
+          </form>
+          {notes.length ? (
+            <div className="sticky-note-grid">
+              {notes.map((note) => (
+                <article className={`sticky-note ${note.color}`} key={note.id}>
+                  <button className="sticky-note-delete" type="button" onClick={() => deleteNote(note.id)} aria-label="Delete note" title="Delete note">×</button>
+                  <p>{note.text}</p>
+                </article>
+              ))}
+            </div>
+          ) : <p className="muted">Pin a thought here so it stays easy to find.</p>}
+        </div>
+      </section>}
+      <nav className="librarian-footer-tabs student-footer-tabs" aria-label="Student dashboard sections">
+        <button className={activeSection === "seat" ? "active" : ""} onClick={() => setActiveSection("seat")}>
+          <span className="tab-icon" aria-hidden="true">▦</span><span className="tab-label">My seat</span>
+        </button>
+        <button className={activeSection === "payment" ? "active" : ""} onClick={() => setActiveSection("payment")}>
+          <span className="tab-icon" aria-hidden="true">₹</span><span className="tab-label">Payments</span>
+        </button>
+        <button className={activeSection === "concerns" ? "active" : ""} onClick={() => setActiveSection("concerns")}>
+          <span className="tab-icon" aria-hidden="true">✋</span><span className="tab-label">Concerns</span>
+        </button>
+        <button className={activeSection === "goals" ? "active" : ""} onClick={() => setActiveSection("goals")}>
+          <span className="tab-icon" aria-hidden="true">◷</span><span className="tab-label">Study goals</span>
+        </button>
+      </nav>
     </Dashboard>
   );
 }
