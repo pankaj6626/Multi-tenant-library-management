@@ -5,10 +5,12 @@ import * as authService from '../services/auth.service.js';
 
 const router = express.Router();
 const refreshCookie = 'library_refresh_token';
+const secureCookie = process.env.COOKIE_SECURE === 'true' || process.env.NODE_ENV === 'production';
+const sameSite = process.env.COOKIE_SAMESITE || (secureCookie ? 'none' : 'lax');
 const cookieOptions = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+  secure: secureCookie,
+  sameSite,
   path: '/api/v1/auth',
   maxAge: 30 * 24 * 60 * 60 * 1000,
 };
@@ -30,7 +32,13 @@ router.post('/login', asyncHandler(async (req, res) => {
 }));
 
 router.post('/refresh', asyncHandler(async (req, res) => {
-  const session = await authService.refresh(getRefreshToken(req));
+  const token = getRefreshToken(req);
+  if (!token) {
+    res.status(204).end();
+    return;
+  }
+
+  const session = await authService.refresh(token);
   setRefreshCookie(res, session.refreshToken);
   const { refreshToken, ...response } = session;
   res.json(response);

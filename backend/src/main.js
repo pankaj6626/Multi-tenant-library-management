@@ -43,6 +43,10 @@ const allowedOrigins = [
     : ['http://localhost:5173', 'http://127.0.0.1:5173']),
 ];
 
+if (process.env.NODE_ENV === 'production' && !configuredOrigins.length) {
+  console.warn('[CORS] FRONTEND_URL is not configured; browser requests will be rejected.');
+}
+
 app.use(cors({
   credentials: true,
   origin(origin, callback) {

@@ -15,6 +15,20 @@ For deployment, set `FRONTEND_URL` to the deployed Vercel origin, for example
 The backend also allows requests without an `Origin` header for health checks, curl,
 and server-to-server calls.
 
+For a frontend and backend deployed on different domains, set these backend variables:
+
+```env
+NODE_ENV=production
+FRONTEND_URL=https://your-library.vercel.app
+COOKIE_SECURE=true
+COOKIE_SAMESITE=none
+```
+
+Also set the frontend deployment variable `VITE_API_URL` to the deployed API base,
+for example `https://your-api.example.com/api/v1`. The refresh token is an HttpOnly,
+Secure cookie, so the frontend must send requests with credentials; the application
+already does this for login, refresh, logout, and API calls.
+
 ## Authentication
 
 Use `POST /api/v1/auth/login` with `email`, `password`, and `libraryCode` for librarians and students. The admin uses `ADMIN_EMAIL` and `ADMIN_PASSWORD` from `.env` and does not need a library code. The response contains a short-lived `accessToken`; send it as `Authorization: Bearer <accessToken>`. The refresh token is set as an HttpOnly cookie and is never returned to the browser JavaScript runtime.

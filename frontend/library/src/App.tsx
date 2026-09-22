@@ -84,11 +84,12 @@ const notifySuccess = (message: string) => {
   );
 };
 
-async function refreshAccessToken(): Promise<AuthSession> {
+async function refreshAccessToken(): Promise<AuthSession | null> {
   const res = await fetch(`${API}/auth/refresh`, {
     method: "POST",
     credentials: "include",
   });
+  if (res.status === 204) return null;
   const body = (await res.json().catch(() => ({}))) as ApiErrorBody;
   if (!res.ok) throw new ApiError(res.status, body, "Session expired");
   return body as AuthSession;
@@ -119,6 +120,7 @@ async function api<T = ReturnType<typeof JSON.parse>>(
   if (res.status === 401 && !path.startsWith("/auth/")) {
     try {
       const refreshed = await refreshAccessToken();
+      if (!refreshed) throw new Error("No refresh session");
       setAccessToken(refreshed.accessToken);
       res = await request(refreshed.accessToken);
     } catch {
@@ -225,6 +227,7 @@ function App() {
   useEffect(() => {
     refreshAccessToken()
       .then((session) => {
+        if (!session) return;
         setAccessToken(session.accessToken);
         setToken(session.accessToken);
         setRole(session.role);
