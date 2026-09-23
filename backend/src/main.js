@@ -3,9 +3,11 @@ import 'dotenv/config';
 import crypto from 'crypto';
 import cors from 'cors';
 import express from 'express';
+import http from 'http';
 
 import connectDatabase from './config/database.js';
 import redis from './config/redis.js';
+import { initializeSocket } from './config/socket.js';
 import errorHandler from './common/middleware/error-handler.js';
 import authController from './modules/auth/controllers/auth.controller.js';
 import libraryController from './modules/libraries/controllers/library.controller.js';
@@ -82,5 +84,7 @@ app.use(errorHandler);
 connectDatabase().then(async () => {
   await redis.checkConnection();
   const port = process.env.PORT || 5000;
-  app.listen(port, () => console.log(`API running on port ${port}`));
+  const server = http.createServer(app);
+  initializeSocket(server, allowedOrigins);
+  server.listen(port, () => console.log(`API running on port ${port}`));
 });

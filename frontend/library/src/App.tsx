@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState, type CSSProperties, type FormEvent, type ReactNode } from "react";
+import { io } from "socket.io-client";
 import "./App.css";
 import "./premium.css";
 
 const API = (import.meta.env.VITE_API_URL || "/api/v1").replace(/\/$/, "");
+const SOCKET_URL = (import.meta.env.VITE_SOCKET_URL || API.replace(/\/api\/v1$/, "")).replace(/\/$/, "");
 type View =
   | "home"
   | "library"
@@ -295,7 +297,7 @@ function App() {
             </button>
           )}
           {token && (role === "ADMIN" || role === "LIBRARIAN" || role === "STUDENT") && (
-            <NotificationBell token={token} />
+            <NotificationBell token={token} role={role} />
           )}
           {token ? (
             <>
@@ -347,7 +349,7 @@ function App() {
   );
 }
 
-function NotificationBell({ token }: { token: string }) {
+function NotificationBell({ token, role }: { token: string; role: string }) {
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -366,6 +368,21 @@ function NotificationBell({ token }: { token: string }) {
   useEffect(() => {
     load().catch(() => undefined);
   }, [token]);
+
+  useEffect(() => {
+    if (role !== "STUDENT" && role !== "LIBRARIAN") return;
+    const socket = io(SOCKET_URL, { auth: { token } });
+    socket.on("notification:created", (notification: NotificationItem) => {
+      setItems((current) => [
+        notification,
+        ...current.filter((item) => item._id !== notification._id),
+      ]);
+      notifySuccess(notification.title);
+    });
+    return () => {
+      socket.disconnect();
+    };
+  }, [token, role]);
 
   useEffect(() => {
     if (!open) return;
@@ -1730,6 +1747,7 @@ function CommunicationPortal({
     [noticeTitle, setNoticeTitle] = useState(""),
     [noticeContent, setNoticeContent] = useState(""),
     [comments, setComments] = useState<Record<string, string>>({}),
+    [expandedComments, setExpandedComments] = useState<Record<string, boolean>>({}),
     [error, setError] = useState("");
   const load = async () => {
     try {
@@ -1746,6 +1764,39 @@ function CommunicationPortal({
   useEffect(() => {
     load();
   }, []);
+  useEffect(() => {
+    const socket = io(SOCKET_URL, { auth: { token } });
+    const normalizePost = (post: any) => ({
+      ...post,
+      likesCount: post.likesCount ?? post.likes?.length ?? 0,
+      likedByMe: post.likedByMe ?? false,
+    });
+    socket.on("post:created", (post: any) => {
+      setPosts((current) => [
+        normalizePost(post),
+        ...current.filter((item) => item._id !== post._id),
+      ]);
+    });
+    socket.on("post:updated", ({ post }: { post: any }) => {
+      setPosts((current) => current.map((item) => (
+        item._id === post._id
+          ? { ...normalizePost(post), likedByMe: item.likedByMe }
+          : item
+      )));
+    });
+    socket.on("post:deleted", ({ postId }: { postId: string }) => {
+      setPosts((current) => current.filter((post) => post._id !== postId));
+    });
+    socket.on("notice:created", (notice: any) => {
+      setNotices((current) => [notice, ...current.filter((item) => item._id !== notice._id)]);
+    });
+    socket.on("notice:deleted", ({ noticeId }: { noticeId: string }) => {
+      setNotices((current) => current.filter((notice) => notice._id !== noticeId));
+    });
+    return () => {
+      socket.disconnect();
+    };
+  }, [token]);
   const createPost = async (e: FormEvent) => {
     e.preventDefault();
     try {
@@ -1803,6 +1854,12 @@ function CommunicationPortal({
     } catch (x) {
       setError(x instanceof Error ? x.message : "Could not remove item");
     }
+  };
+  const toggleComments = (postId: string) => {
+    setExpandedComments((current) => ({
+      ...current,
+      [postId]: !current[postId],
+    }));
   };
   return (
     <section className="communication">
@@ -1869,12 +1926,22 @@ function CommunicationPortal({
                   <button
                     className={`like-button ${post.likedByMe ? "liked" : ""}`}
                     onClick={() => toggleLike(post._id)}
+                      aria-pressed={Boolean(post.likedByMe)}
                   >
-                    ♡ <span>{post.likesCount || 0} likes</span>
+                      <span className="like-icon" aria-hidden="true">{post.likedByMe ? "♥" : "♡"}</span>
+                      <span>{post.likesCount || 0} likes</span>
                   </button>
-                  <span>{post.comments?.length || 0} comments</span>
+                  <button
+                    type="button"
+                    className="comments-toggle"
+                    onClick={() => toggleComments(post._id)}
+                    aria-expanded={Boolean(expandedComments[post._id])}
+                  >
+                    <span className="comments-icon" aria-hidden="true">💬</span>{" "}
+                    {expandedComments[post._id] ? "Hide" : "Show"} {post.comments?.length || 0} comments
+                  </button>
                 </div>
-                <div className="comments">
+                {expandedComments[post._id] && <div className="comments">
                   {post.comments?.map((comment: any) => (
                     <div className="comment" key={comment._id}>
                       <span className="avatar tiny">
@@ -1926,7 +1993,7 @@ function CommunicationPortal({
                       <button className="outline small">Comment</button>
                     </form>
                   )}
-                </div>
+                </div>}
                 </article>
               ))
             ) : (

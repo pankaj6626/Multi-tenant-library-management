@@ -3,6 +3,7 @@ import redis from '../../../config/redis.js';
 import * as repository from '../repositories/community.repository.js';
 import studentRepository from '../../students/repositories/student.repository.js';
 import * as notificationService from '../../notifications/services/notification.service.js';
+import { emitToLibrary } from '../../../config/socket.js';
 
 const findPosts = async (library, studentId) => {
   const key = `community:posts:${library}`;
@@ -19,6 +20,8 @@ const findPosts = async (library, studentId) => {
 const createPost = async (library, author, title, content) => {
   const post = await repository.createPost({ library, author, title, content });
   await redis.del(`community:posts:${library}`);
+  const postView = await repository.findPostView({ _id: post._id, library });
+  emitToLibrary(library, 'post:created', postView.toObject());
   return post;
 };
 
@@ -28,6 +31,8 @@ const addComment = async (library, postId, author, message) => {
   post.comments.push({ author, message });
   const result = await repository.savePost(post);
   await redis.del(`community:posts:${library}`);
+  const postView = await repository.findPostView({ _id: post._id, library });
+  emitToLibrary(library, 'post:updated', { post: postView.toObject(), change: 'comment:created' });
   if (String(post.author) !== String(author)) {
     const commenter = await studentRepository.findById(author);
     const comment = post.comments[post.comments.length - 1];
@@ -53,6 +58,13 @@ const toggleLike = async (library, postId, studentId) => {
   else post.likes.splice(index, 1);
   await repository.savePost(post);
   await redis.del(`community:posts:${library}`);
+  const postView = await repository.findPostView({ _id: post._id, library });
+  emitToLibrary(library, 'post:updated', {
+    post: postView.toObject(),
+    change: 'like:updated',
+    actorId: studentId,
+    liked,
+  });
   if (liked && String(post.author) !== String(studentId)) {
     const liker = await studentRepository.findById(studentId);
     await notificationService.notify({
@@ -72,6 +84,7 @@ const deletePost = async (library, postId) => {
   const post = await repository.deletePost({ _id: postId, library });
   if (!post) throw new HttpError('Post not found', 404);
   await redis.del(`community:posts:${library}`);
+  emitToLibrary(library, 'post:deleted', { postId });
 };
 
 const deleteComment = async (library, postId, commentId) => {
@@ -82,6 +95,8 @@ const deleteComment = async (library, postId, commentId) => {
   post.comments.pull(commentId);
   await repository.savePost(post);
   await redis.del(`community:posts:${library}`);
+  const postView = await repository.findPostView({ _id: post._id, library });
+  emitToLibrary(library, 'post:updated', { post: postView.toObject(), change: 'comment:deleted' });
 };
 
 const findNotices = async (library) => {
@@ -96,6 +111,8 @@ const findNotices = async (library) => {
 const createNotice = async (library, author, title, content) => {
   const notice = await repository.createNotice({ library, author, title, content });
   await redis.del(`community:notices:${library}`);
+  const noticeView = await repository.findNotice({ _id: notice._id, library });
+  emitToLibrary(library, 'notice:created', noticeView.toObject());
   const students = await studentRepository.findIdsByLibrary(library);
   await notificationService.notifyMany(students.map(({ _id: recipient }) => recipient), {
     recipientRole: 'STUDENT',
@@ -111,6 +128,7 @@ const deleteNotice = async (library, noticeId) => {
   const notice = await repository.deleteNotice({ _id: noticeId, library });
   if (!notice) throw new HttpError('Notice not found', 404);
   await redis.del(`community:notices:${library}`);
+  emitToLibrary(library, 'notice:deleted', { noticeId });
 };
 
 export { findPosts, createPost, addComment, toggleLike, deletePost, deleteComment, findNotices, createNotice, deleteNotice };

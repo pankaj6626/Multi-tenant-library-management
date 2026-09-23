@@ -418,6 +418,11 @@ button:active {
 .sticky-note p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; line-height: 1.55; }
 .sticky-note-delete { position: absolute; top: 6px; right: 7px; padding: 0 3px; border: 0; background: transparent; color: rgba(41, 64, 57, .65); font-size: 18px; line-height: 1; }
 .sticky-note-delete:hover { color: #294039; }
+.comments-toggle { border: 0; background: transparent; color: var(--muted); font-size: 11px; }
+.comments-toggle:hover { color: var(--brand); }
+.comments-icon { margin-right: 3px; font-size: 14px; line-height: 1; vertical-align: -1px; }
+.like-button .like-icon { margin-left: 0; font-size: 19px; line-height: 1; }
+.like-button.liked .like-icon { color: #e5484d; font-weight: 700; }
 
 @media(max-width:620px) {
   .study-tools { grid-template-columns: 1fr; }

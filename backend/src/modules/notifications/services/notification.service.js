@@ -1,8 +1,9 @@
 import * as repository from '../repositories/notification.repository.js';
+import { emitToUser } from '../../../config/socket.js';
 
 const notify = async ({ recipient, recipientRole, library, type, title, message, eventKey }) => {
   try {
-    return await repository.create({
+    const notification = await repository.create({
       recipient,
       recipientRole,
       library,
@@ -11,6 +12,8 @@ const notify = async ({ recipient, recipientRole, library, type, title, message,
       message,
       eventKey,
     });
+    if (notification) emitToUser(recipient, 'notification:created', notification.toObject());
+    return notification;
   } catch (error) {
     if (error.code === 11000) return null;
     throw error;
