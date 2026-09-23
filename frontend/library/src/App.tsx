@@ -14,6 +14,10 @@ type View =
   | "student"
   | "community";
 type Values = Record<string, string>;
+type FormField =
+  | [string, string]
+  | [string, string, string]
+  | [string, string, string | undefined, (values: Values) => boolean];
 type Toast = { message: string; kind: "success" | "error" };
 type AuthSession = {
   accessToken: string;
@@ -669,7 +673,7 @@ function Form({
   button,
 }: {
   title: string;
-  fields: [string, string, string?][];
+  fields: FormField[];
   submit: (v: Values) => Promise<void>;
   button: string;
 }) {
@@ -701,7 +705,10 @@ function Form({
         <p>Set up your details and we will take care of the rest.</p>
       </div>
       <form onSubmit={send}>
-        {fields.map(([name, label, type]) => (
+        {fields.filter((field) => {
+          const visible = field[3];
+          return typeof visible !== "function" || visible(values);
+        }).map(([name, label, type]) => (
           <label key={name}>
             {label}
             <span className={type === "password" ? "password-input" : undefined}>
@@ -819,13 +826,14 @@ function Login({
 }: {
   done: (x: AuthSession) => void;
 }) {
+  const adminEmail = (import.meta.env.VITE_ADMIN_EMAIL).toLowerCase();
   return (
     <Form
       title="Welcome back"
       fields={[
         ["email", "Email", "email"],
         ["password", "Password", "password"],
-        ["libraryCodeOptional", "Library code (not needed for admin)"],
+        ["libraryCodeOptional", "Library code", undefined, (values) => values.email?.trim().toLowerCase() !== adminEmail],
       ]}
       button="Enter dashboard"
       submit={async (v) => {
@@ -1606,7 +1614,7 @@ function Student({ token }: { token: string }) {
           meta={`${goalsForDate.filter((goal) => goal.completed).length}/${goalsForDate.length} complete`}
         />
         <div className="study-tools">
-          <div className="focus-timer">
+          <div className={`focus-timer ${timerRunning ? "is-running" : ""}`}>
             <p className="eyebrow">FOCUS SESSION</p>
             <strong>{minutes}:{seconds}</strong>
             <div className="timer-actions">
