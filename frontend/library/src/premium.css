@@ -181,6 +181,26 @@ button:active {
   flex-wrap: wrap;
 }
 
+.sign-out-button {
+  padding: 6px 9px;
+  border: 1px solid #c85b58;
+  border-radius: 8px;
+  background: transparent;
+  color: #b44240;
+  font-size: 11px;
+  font-weight: 700;
+  transition: color .2s ease, background .2s ease, border-color .2s ease, box-shadow .2s ease;
+}
+
+.sign-out-button:hover {
+  border-color: #b44240;
+  background: #fff0ef;
+  color: #963532;
+}
+
+:root[data-theme='dark'] .sign-out-button { border-color: #df817d; color: #ffaaa5; }
+:root[data-theme='dark'] .sign-out-button:hover { background: #492b2a; color: #ffd0cd; }
+
 .notification-center {
   position: relative;
   z-index: 20;
@@ -424,12 +444,29 @@ button:active {
 .like-button .like-icon { margin-left: 0; font-size: 19px; line-height: 1; }
 .like-button.liked .like-icon { color: #e5484d; font-weight: 700; }
 
+.librarian-footer-tabs { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.expense-form { display: grid; gap: 18px; }
+.expense-month-field { display: grid; gap: 7px; max-width: 220px; color: var(--muted); font-size: 12px; font-weight: 700; }
+.expense-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 13px; }
+.expense-fields label { display: grid; gap: 7px; min-width: 0; color: var(--muted); font-size: 11px; font-weight: 700; }
+.expense-fields input { min-width: 0; }
+.expense-submit-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
+.expense-total { margin: 0; color: var(--muted); font-size: 13px; }
+.expense-total strong { display: block; margin-top: 4px; color: var(--brand); font-size: 25px; }
+.expense-history { margin-top: 28px; padding-top: 22px; border-top: 1px solid var(--line); }
+.expense-breakdown summary { color: var(--brand); font-size: 11px; font-weight: 700; cursor: pointer; }
+.expense-breakdown ul { display: grid; gap: 4px; margin: 8px 0 4px; padding-left: 17px; color: var(--muted); font-size: 11px; }
+
 @media(max-width:620px) {
   .study-tools { grid-template-columns: 1fr; }
   .goal-form { align-items: stretch; flex-direction: column; }
   .goal-form input[type="date"], .goal-form button { width: 100%; max-width: none; }
   .sticky-note-actions { align-items: stretch; flex-direction: column; }
   .sticky-note-actions .primary { width: 100%; }
+  .expense-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .expense-submit-row { align-items: stretch; flex-direction: column; }
+  .expense-submit-row .primary { width: 100%; }
+  .librarian-footer-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 .assign-view-tabs {
@@ -1021,34 +1058,36 @@ button:active {
 
 @media (max-width: 620px) {
   .librarian-footer-tabs {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 4px;
-    padding: 5px;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 2px;
+    padding: 4px;
   }
 
   .librarian-footer-tabs button {
     min-width: 0;
-    min-height: 54px;
-    padding: 4px 2px;
+    min-height: 50px;
+    padding: 3px 1px;
     flex-direction: column;
     justify-content: center;
-    gap: 4px;
+    gap: 3px;
   }
 
   .librarian-footer-tabs .tab-icon {
-    flex: 0 0 24px;
-    width: 24px;
-    height: 24px;
-    font-size: 13px;
+    flex: 0 0 21px;
+    width: 21px;
+    height: 21px;
+    border-radius: 6px;
+    font-size: 11px;
   }
 
   .librarian-footer-tabs .tab-label {
     width: 100%;
     overflow: hidden;
-    font-size: 9px;
+    font-size: 8px;
     line-height: 1.1;
     text-align: center;
     text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
 

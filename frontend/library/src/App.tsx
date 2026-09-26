@@ -302,7 +302,7 @@ function App() {
           {token ? (
             <>
               <span className="role-pill">{role}</span>
-              <button className="link" onClick={logout}>
+              <button className="sign-out-button" onClick={logout}>
                 Sign out
               </button>
             </>
@@ -989,7 +989,7 @@ function Admin({ token }: { token: string }) {
 }
 function Librarian({ token }: { token: string }) {
   const [activeSection, setActiveSection] = useState<
-    "seats" | "assign" | "payment" | "concerns"
+    "seats" | "assign" | "payment" | "concerns" | "expenses"
   >("seats");
   const [assignView, setAssignView] = useState<"history" | "pending" | "details">("pending");
   const [studentSearch, setStudentSearch] = useState("");
@@ -999,20 +999,25 @@ function Librarian({ token }: { token: string }) {
     [studentHistory, setStudentHistory] = useState<any[]>([]),
     [error, setError] = useState(""),
     [assign, setAssign] = useState<Values>({}),
-    [fee, setFee] = useState<Values>({});
+    [fee, setFee] = useState<Values>({}),
+    [expenseHistory, setExpenseHistory] = useState<any[]>([]),
+    [expenseMonth, setExpenseMonth] = useState(() => getToday().slice(0, 7)),
+    [expenseAmounts, setExpenseAmounts] = useState<Record<string, string>>({});
   const load = async () => {
     try {
-      const [a, b, c, d] = await Promise.all([
+      const [a, b, c, d, , expenses] = await Promise.all([
         api("/seats", "GET", undefined, token),
         api("/libraries/students", "GET", undefined, token),
         api("/concerns", "GET", undefined, token),
         api("/libraries/students/history", "GET", undefined, token),
         api("/fees/pending", "GET", undefined, token),
+        api("/expenses", "GET", undefined, token),
       ]);
       setSeats(a);
       setStudents(b);
       setConcerns(c);
       setStudentHistory(d);
+      setExpenseHistory(expenses);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unable to load");
     }
@@ -1053,6 +1058,22 @@ function Librarian({ token }: { token: string }) {
   const filteredStudents = students.filter((student) =>
     student.name.toLowerCase().includes(studentSearch.trim().toLowerCase()),
   );
+  const expenseCategories = [
+    ["electricity", "Electricity"],
+    ["rent", "Rent"],
+    ["internet", "Internet"],
+    ["cleaning", "Cleaning"],
+    ["staffSalary", "Staff salary"],
+    ["water", "Water"],
+    ["maintenance", "Maintenance"],
+    ["furniture", "Furniture"],
+    ["others", "Others"],
+  ];
+  const currentExpense = expenseHistory.find((record) => record.month === expenseMonth);
+  const expenseTotal = expenseCategories.reduce(
+    (sum, [key]) => sum + Number(expenseAmounts[key] ?? currentExpense?.[key] ?? 0),
+    0,
+  );
   const pendingConcerns = concerns.filter((concern) => concern.status === "OPEN");
   const resolvedConcerns = concerns.filter((concern) => concern.status !== "OPEN");
   const concernHeads = ["Student", "Mobile", "Concern", "Status", ""];
@@ -1077,18 +1098,18 @@ function Librarian({ token }: { token: string }) {
   ]);
   return (
     <Dashboard
-      title="Good morning, librarian"
+      title="Welcome librarian"
       subtitle="Here is the pulse of your library today."
       kicker="LIBRARIAN DESK"
       error={error}
     >
-      <div className="stats">
+      {activeSection === "seats" && <div className="stats">
         <Stat n={seats.length * 2} t="Total seats" icon="▦" />
         <Stat n={occupied} t="Occupied" icon="●" />
         <Stat n={seats.length * 2 - occupied} t="Available" icon="＋" />
         <Stat n={raised} t="Raised hands" icon="✋" accent="amber" />
         <Stat n={overdue} t="Pending fees" icon="◷" accent="rose" />
-      </div>
+      </div>}
       {activeSection === "seats" && <section className="panel librarian-panel">
         <PanelHeading
           title="Seat map"
@@ -1338,6 +1359,81 @@ function Librarian({ token }: { token: string }) {
             </button>
           </form>
       </section>}
+      {activeSection === "expenses" && <section className="panel librarian-panel expense-panel">
+        <PanelHeading title="Monthly library expenses" meta="Private to this library" />
+        <form
+          className="expense-form"
+          onSubmit={async (event) => {
+            event.preventDefault();
+            try {
+              const amounts = Object.fromEntries(expenseCategories.map(([key]) => [
+                key,
+                Number(expenseAmounts[key] ?? currentExpense?.[key] ?? 0),
+              ]));
+              const saved = await api(`/expenses/${expenseMonth}`, "PUT", { amounts }, token);
+              setExpenseHistory((current) => [
+                saved,
+                ...current.filter((record) => record.month !== expenseMonth),
+              ].sort((left, right) => right.month.localeCompare(left.month)));
+              setExpenseAmounts({});
+              notifySuccess("Monthly expenses saved.");
+            } catch (cause) {
+              setError(cause instanceof Error ? cause.message : "Could not save monthly expenses");
+            }
+          }}
+        >
+          <label className="expense-month-field">
+            Month
+            <input
+              type="month"
+              required
+              value={expenseMonth}
+              onChange={(event) => {
+                setExpenseMonth(event.target.value);
+                setExpenseAmounts({});
+              }}
+            />
+          </label>
+          <div className="expense-fields">
+            {expenseCategories.map(([key, label]) => (
+              <label key={key}>
+                {label}
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  required
+                  value={expenseAmounts[key] ?? currentExpense?.[key] ?? 0}
+                  onChange={(event) => setExpenseAmounts({ ...expenseAmounts, [key]: event.target.value })}
+                  aria-label={`${label} expense amount`}
+                />
+              </label>
+            ))}
+          </div>
+          <div className="expense-submit-row">
+            <p className="expense-total">Monthly total <strong>₹{expenseTotal.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></p>
+            <button className="primary small">{currentExpense ? "Update month" : "Save month"}<span>→</span></button>
+          </div>
+        </form>
+        <div className="expense-history">
+          <PanelHeading title="Monthly expense history" meta={`${expenseHistory.length} months`} />
+          <Table
+            heads={["Month", "Total expenses", "Category breakdown"]}
+            rows={expenseHistory.map((record) => [
+              new Intl.DateTimeFormat(undefined, { month: "long", year: "numeric" }).format(new Date(`${record.month}-01T00:00:00`)),
+              `₹${Number(record.total).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+              <details className="expense-breakdown">
+                <summary>View amounts</summary>
+                <ul>
+                  {expenseCategories.map(([key, label]) => (
+                    <li key={key}>{label}: ₹{Number(record[key] || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</li>
+                  ))}
+                </ul>
+              </details>,
+            ])}
+          />
+        </div>
+      </section>}
       {activeSection === "concerns" && <section className="panel librarian-panel">
         <PanelHeading
           title="Student concerns"
@@ -1363,6 +1459,9 @@ function Librarian({ token }: { token: string }) {
         </button>
         <button className={activeSection === "payment" ? "active" : ""} onClick={() => setActiveSection("payment")}>
           <span className="tab-icon" aria-hidden="true">₹</span><span className="tab-label">Record payment</span>
+        </button>
+        <button className={activeSection === "expenses" ? "active" : ""} onClick={() => setActiveSection("expenses")}>
+          <span className="tab-icon" aria-hidden="true">∑</span><span className="tab-label">Expenses</span>
         </button>
         <button className={activeSection === "concerns" ? "active" : ""} onClick={() => setActiveSection("concerns")}>
           <span className="tab-icon" aria-hidden="true">✋</span><span className="tab-label">Concerns</span>

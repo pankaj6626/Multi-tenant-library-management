@@ -60,10 +60,13 @@ Authenticated students and librarians can use `GET /api/v1/notifications` to loa
 - `GET /api/v1/students/me`, `GET /api/v1/libraries/students`, `GET /api/v1/libraries/students/history`, `DELETE /api/v1/libraries/students/:id`
 - `GET|POST /api/v1/seats`, `POST /api/v1/seats/:id/assign`, `PATCH /api/v1/seats/:id/release`
 - `POST /api/v1/students/:id/fees`, `GET /api/v1/students/me/fees`, `GET /api/v1/fees/pending`
+- `GET /api/v1/expenses`, `PUT /api/v1/expenses/:month` (librarian-only monthly expense history and save/update; month format `YYYY-MM`)
 - `POST /api/v1/concerns`, `GET /api/v1/concerns`, `PATCH /api/v1/concerns/:id/resolve`
 - `GET|POST /api/v1/communication/posts`, `POST /api/v1/communication/posts/:id/comments`, `PATCH /api/v1/communication/posts/:id/like`
 - `DELETE /api/v1/communication/posts/:id`, `DELETE /api/v1/communication/posts/:postId/comments/:commentId`
 - `GET|POST /api/v1/communication/notices`, `DELETE /api/v1/communication/notices/:id`
+
+Monthly expenses are scoped to the authenticated librarian's library. Each month stores Electricity, Rent, Internet, Cleaning, Staff salary, Water, Maintenance, Furniture, and Others; the API calculates the total and allows the same library/month record to be updated.
 
 Approving the first librarian automatically creates the requested number of seats. Each seat accepts one student in `SHIFT_1` and one in `SHIFT_2`. A fee is overdue when no payment has been recorded in the previous 30 days (or the student registered more than 30 days ago without a payment).
 
