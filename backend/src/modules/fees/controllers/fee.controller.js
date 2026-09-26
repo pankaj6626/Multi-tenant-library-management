@@ -7,7 +7,14 @@ import * as feeService from '../services/fee.service.js';
 const router = express.Router();
 
 router.post('/students/:id/fees', protect, allow('LIBRARIAN'), asyncHandler(async (req, res) => {
-  const payment = await feeService.record(req.user.libraryId, req.params.id, req.body.amount, req.body.paidAt, req.user.id);
+  const payment = await feeService.record(
+    req.user.libraryId,
+    req.params.id,
+    req.body.amount,
+    req.body.paidAt,
+    req.user.id,
+    req.body.paymentMethod,
+  );
   res.status(201).json(payment);
 }));
 

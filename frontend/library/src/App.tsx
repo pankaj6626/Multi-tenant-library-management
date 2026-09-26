@@ -1294,6 +1294,7 @@ function Librarian({ token }: { token: string }) {
                   {
                     amount: Number(fee.amount),
                     paidAt: fee.paidAt || undefined,
+                    paymentMethod: fee.paymentMethod || "CASH",
                   },
                   token,
                 );
@@ -1323,6 +1324,15 @@ function Librarian({ token }: { token: string }) {
               value={fee.paidAt || ""}
               onChange={(e) => setFee({ ...fee, paidAt: e.target.value })}
             />
+            <select
+              required
+              aria-label="Payment method"
+              value={fee.paymentMethod || "CASH"}
+              onChange={(e) => setFee({ ...fee, paymentMethod: e.target.value })}
+            >
+              <option value="CASH">Cash</option>
+              <option value="UPI">UPI</option>
+            </select>
             <button className="primary small">
               Save payment <span>→</span>
             </button>
@@ -1597,10 +1607,39 @@ function Student({ token }: { token: string }) {
           meta={`${data.payments.length} records`}
         />
         <Table
-          heads={["Amount", "Paid date"]}
+          heads={["Amount", "Paid date", "Receipt"]}
           rows={data.payments.map((p: any) => [
             `₹${p.amount}`,
             new Date(p.paidAt).toLocaleDateString(),
+            <button
+              type="button"
+              className="outline small receipt-download"
+              onClick={async () => {
+                try {
+                  const { generatePaymentReceipt } = await import("./utils/payment-receipt");
+                  generatePaymentReceipt({
+                    paymentId: p._id,
+                    libraryName: data.student.library?.name || "LibraryHub",
+                    studentName: data.student.name,
+                    studentEmail: data.student.email,
+                    studentMobile: data.student.mobile,
+                    librarianName: p.recordedBy?.name || "Library staff",
+                    seatNumber: data.seat?.seatNumber || "Not assigned",
+                    shift: data.seat?.assignments?.find((assignment: any) => (
+                      String(assignment.student) === String(data.student._id)
+                      || String(assignment.student?._id) === String(data.student._id)
+                    ))?.shift || "Not assigned",
+                    paidAt: p.paidAt,
+                    amount: p.amount,
+                    paymentMethod: p.paymentMethod === "UPI" ? "UPI" : "CASH",
+                  });
+                } catch {
+                  setError("Could not generate the payment receipt. Please try again.");
+                }
+              }}
+            >
+              Download PDF
+            </button>,
           ])}
         />
       </section>}

@@ -6,7 +6,10 @@ import librarianRepository from '../../librarians/repositories/librarian.reposit
 import * as notificationService from '../../notifications/services/notification.service.js';
 import feeRepository from '../repositories/fee.repository.js';
 
-const record = async (libraryId, studentId, amount, paidAt, recordedBy) => {
+const record = async (libraryId, studentId, amount, paidAt, recordedBy, paymentMethod = 'CASH') => {
+  if (!['UPI', 'CASH'].includes(paymentMethod)) {
+    throw new HttpError('Payment method must be UPI or CASH', 400, 'INVALID_PAYMENT_METHOD');
+  }
   const student = await studentRepository.findOne({
     _id: studentId,
     library: libraryId,
@@ -18,6 +21,7 @@ const record = async (libraryId, studentId, amount, paidAt, recordedBy) => {
     student: student._id,
     amount,
     paidAt: paidAt || new Date(),
+    paymentMethod,
     recordedBy,
   });
   await redis.del(`library:seats:${libraryId}`);

@@ -15,6 +15,12 @@ export default mongoose.model(
       },
       amount: { type: Number, required: true, min: 0 },
       paidAt: { type: Date, required: true },
+      paymentMethod: {
+        type: String,
+        enum: ["UPI", "CASH"],
+        default: "CASH",
+        required: true,
+      },
       recordedBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Librarian",
