@@ -338,7 +338,7 @@ function App() {
       {view === "login" && <Login done={loggedIn} />}{" "}
       {view === "admin" && <Admin token={token} />}{" "}
       {view === "librarian" && <Librarian token={token} />}{" "}
-      {view === "student" && <Student token={token} />} {" "}
+      {view === "student" && <Student token={token} openCommunity={() => setView("community")} />} {" "}
       {view === "community" && (
         <CommunicationPortal
           token={token}
@@ -1564,7 +1564,7 @@ const getToday = () => {
   return new Date(date.getTime() - timezoneOffset).toISOString().slice(0, 10);
 };
 
-function Student({ token }: { token: string }) {
+function Student({ token, openCommunity }: { token: string; openCommunity: () => void }) {
   const [activeSection, setActiveSection] = useState<"seat" | "payment" | "concerns" | "goals">("seat");
   const [data, setData] = useState<any>(),
     [message, setMessage] = useState(""),
@@ -1866,6 +1866,9 @@ function Student({ token }: { token: string }) {
         </button>
         <button className={activeSection === "goals" ? "active" : ""} onClick={() => setActiveSection("goals")}>
           <span className="tab-icon" aria-hidden="true">◷</span><span className="tab-label">Study goals</span>
+        </button>
+        <button type="button" onClick={openCommunity}>
+          <span className="tab-icon" aria-hidden="true">✦</span><span className="tab-label">Community</span>
         </button>
       </nav>
     </Dashboard>

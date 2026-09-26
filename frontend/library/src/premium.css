@@ -445,6 +445,7 @@ button:active {
 .like-button.liked .like-icon { color: #e5484d; font-weight: 700; }
 
 .librarian-footer-tabs { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.student-footer-tabs { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .expense-form { display: grid; gap: 18px; }
 .expense-month-field { display: grid; gap: 7px; max-width: 220px; color: var(--muted); font-size: 12px; font-weight: 700; }
 .expense-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 13px; }
@@ -467,6 +468,7 @@ button:active {
   .expense-submit-row { align-items: stretch; flex-direction: column; }
   .expense-submit-row .primary { width: 100%; }
   .librarian-footer-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .student-footer-tabs { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 }
 
 .assign-view-tabs {
