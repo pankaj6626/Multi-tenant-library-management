@@ -27,6 +27,8 @@ import './events/consumers/audit.consumer.js';
 const app = express();
 const apiPrefix = '/api/v1';
 
+if (process.env.NODE_ENV === 'production') app.set('trust proxy', 1);
+
 app.use((req, res, next) => {
   const requestId = req.headers['x-request-id'] || crypto.randomUUID();
   req.id = requestId;
