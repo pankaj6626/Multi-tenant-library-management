@@ -55,4 +55,39 @@ const del = async (...keys) => {
   }
 };
 
-export default { get, set, del, checkConnection, enabled: Boolean(redis) };
+const getStrict = async (key) => {
+  if (!redis) throw new Error('Redis is required for this operation');
+  return redis.get(key);
+};
+
+const setStrict = async (key, value, ttlSeconds, onlyIfMissing = false) => {
+  if (!redis) throw new Error('Redis is required for this operation');
+  return redis.set(key, value, {
+    ex: ttlSeconds,
+    ...(onlyIfMissing ? { nx: true } : {}),
+  });
+};
+
+const delStrict = async (...keys) => {
+  if (!redis) throw new Error('Redis is required for this operation');
+  if (keys.length) return redis.del(...keys);
+};
+
+const incrementStrict = async (key, ttlSeconds) => {
+  if (!redis) throw new Error('Redis is required for this operation');
+  const count = await redis.incr(key);
+  if (count === 1) await redis.expire(key, ttlSeconds);
+  return count;
+};
+
+export default {
+  get,
+  set,
+  del,
+  getStrict,
+  setStrict,
+  delStrict,
+  incrementStrict,
+  checkConnection,
+  enabled: Boolean(redis),
+};

@@ -31,6 +31,14 @@ router.post('/login', asyncHandler(async (req, res) => {
   res.json(response);
 }));
 
+router.post('/password-reset/request', asyncHandler(async (req, res) => {
+  res.json(await authService.requestPasswordReset(req.body, req.ip));
+}));
+
+router.post('/password-reset/verify', asyncHandler(async (req, res) => {
+  res.json(await authService.verifyPasswordReset(req.body));
+}));
+
 router.post('/refresh', asyncHandler(async (req, res) => {
   const token = getRefreshToken(req);
   if (!token) {

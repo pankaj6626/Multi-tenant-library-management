@@ -35,6 +35,17 @@ Use `POST /api/v1/auth/login` with `email`, `password`, and `libraryCode` for li
 
 Access tokens expire after 30 minutes. `POST /api/v1/auth/refresh` rotates the refresh cookie and returns a new access token; clients must send credentials/cookies with this request. `POST /api/v1/auth/logout` revokes the refresh session and clears the cookie, so it does not require an access token. Configure `FRONTEND_URL` for credentialed cross-origin requests in production.
 
+### Password reset email
+
+Set these variables in the backend environment (Render in production):
+
+```env
+RESEND_API_KEY=re_...
+RESEND_FROM_EMAIL=LibraryHub <no-reply@your-verified-domain.com>
+```
+
+Verify the sending domain in Resend before using it for student and librarian recipients. Keep the API key only on the backend; never add it to Vercel frontend variables. The reset flow uses `POST /api/v1/auth/password-reset/request` to email a six-digit code and `POST /api/v1/auth/password-reset/verify` to validate the code and set the new password. Codes expire after 10 minutes, can be attempted at most five times, requests for the same address have a one-minute cooldown and five-per-day cap, and source IPs are capped at 20 requests per hour. Upstash Redis must be configured because it stores the short-lived challenge and rate limits. The request endpoint returns the same message whether or not an account exists.
+
 ## Error responses
 
 API errors use a consistent JSON shape with `success: false`, a user-safe `message`, a stable `code`, and a `requestId` for tracing. Validation errors may include a `details` object. Clients should display `message` and retain `requestId` for support diagnostics; server stack traces and sensitive values are never returned.

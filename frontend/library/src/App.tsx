@@ -11,6 +11,7 @@ type View =
   | "librarian-register"
   | "student-register"
   | "login"
+  | "forgot-password"
   | "admin"
   | "librarian"
   | "student"
@@ -171,7 +172,6 @@ function App() {
     () => (localStorage.getItem("libraryTheme") as "light" | "dark") || "light",
   );
   const [toast, setToast] = useState<Toast | null>(null);
-
   useEffect(() => {
     localStorage.removeItem("libraryToken");
     sessionStorage.removeItem("libraryToken");
@@ -335,7 +335,8 @@ function App() {
       {view === "student-register" && (
         <StudentForm done={showToast} go={setView} />
       )}{" "}
-      {view === "login" && <Login done={loggedIn} />}{" "}
+      {view === "login" && <Login done={loggedIn} forgot={() => setView("forgot-password")} />}{" "}
+      {view === "forgot-password" && <ForgotPassword done={showToast} go={() => setView("login")} />} {" "}
       {view === "admin" && <Admin token={token} />}{" "}
       {view === "librarian" && <Librarian token={token} />}{" "}
       {view === "student" && <Student token={token} />} {" "}
@@ -688,11 +689,13 @@ function Form({
   fields,
   submit,
   button,
+  footer,
 }: {
   title: string;
   fields: FormField[];
   submit: (v: Values) => Promise<void>;
   button: string;
+  footer?: ReactNode;
 }) {
   const [values, setValues] = useState<Values>({});
   const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
@@ -754,6 +757,7 @@ function Form({
           {busy ? "Please wait..." : button}
           <span>→</span>
         </button>
+        {footer}
       </form>
     </section>
   );
@@ -840,8 +844,10 @@ const StudentForm = ({
 );
 function Login({
   done,
+  forgot,
 }: {
   done: (x: AuthSession) => void;
+  forgot: () => void;
 }) {
   const adminEmail = (import.meta.env.VITE_ADMIN_EMAIL).toLowerCase();
   return (
@@ -862,9 +868,127 @@ function Login({
           }),
         );
       }}
+      footer={
+        <button className="link form-link" type="button" onClick={forgot}>
+          Forgot password?
+        </button>
+      }
     />
   );
 }
+
+function ForgotPassword({
+  done,
+  go,
+}: {
+  done: (message: string) => void;
+  go: () => void;
+}) {
+  const [email, setEmail] = useState("");
+  const [code, setCode] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [stage, setStage] = useState<"email" | "verify">("email");
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [resendSeconds, setResendSeconds] = useState(0);
+
+  useEffect(() => {
+    if (resendSeconds <= 0) return;
+    const timer = window.setInterval(() => {
+      setResendSeconds((seconds) => Math.max(0, seconds - 1));
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [resendSeconds]);
+
+  const requestCode = async () => {
+    setBusy(true);
+    setError("");
+    try {
+      const result = await api<{ message: string }>("/auth/password-reset/request", "POST", { email });
+      setMessage(result.message);
+      setStage("verify");
+      setResendSeconds(60);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not request a verification code");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    if (stage === "email") {
+      await requestCode();
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError("Passwords do not match. Please enter the same password in both fields.");
+      return;
+    }
+    setBusy(true);
+    setError("");
+    try {
+      const result = await api<{ message: string }>("/auth/password-reset/verify", "POST", {
+        email,
+        code,
+        password,
+        confirmPassword,
+      });
+      done(result.message);
+      go();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not reset password");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <section className="form-wrap page-enter">
+      <div className="form-heading">
+        <p className="eyebrow">ACCOUNT RECOVERY</p>
+        <h1>{stage === "email" ? "Reset your password" : "Verify your email"}</h1>
+        <p>{stage === "email" ? "We will send a verification code to your account email." : `Enter the code sent to ${email}, then choose a new password.`}</p>
+      </div>
+      <form onSubmit={submit}>
+        {stage === "email" ? (
+          <label>
+            Email
+            <input required type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} />
+          </label>
+        ) : (
+          <>
+            <label>
+              Verification code
+              <input required inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} value={code} onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))} />
+            </label>
+            <label>
+              New password
+              <input required type="password" minLength={8} autoComplete="new-password" value={password} onChange={(event) => setPassword(event.target.value)} />
+            </label>
+            <label>
+              Confirm new password
+              <input required type="password" minLength={8} autoComplete="new-password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} />
+            </label>
+            <button className="link form-link" type="button" disabled={busy || resendSeconds > 0} onClick={requestCode}>
+              {resendSeconds > 0 ? `Resend code in ${resendSeconds}s` : "Resend verification code"}
+            </button>
+          </>
+        )}
+        {message && <p className="muted" role="status">{message}</p>}
+        {error && <p className="error" role="alert">{error}</p>}
+        <button className="primary" disabled={busy}>
+          {busy ? "Please wait..." : stage === "email" ? "Send verification code" : "Update password"}
+          <span>→</span>
+        </button>
+        <button className="link form-link" type="button" onClick={go}>Back to login</button>
+      </form>
+    </section>
+  );
+}
+
 function Admin({ token }: { token: string }) {
   const [libraries, setLibraries] = useState<any[]>([]),
     [librarians, setLibrarians] = useState<any[]>([]),
