@@ -1895,7 +1895,6 @@ function CommunicationPortal({
   const [editingPostId, setEditingPostId] = useState("");
   const [posts, setPosts] = useState<any[]>([]),
     [notices, setNotices] = useState<any[]>([]),
-    [title, setTitle] = useState(""),
     [content, setContent] = useState(""),
     [noticeTitle, setNoticeTitle] = useState(""),
     [noticeContent, setNoticeContent] = useState(""),
@@ -1953,8 +1952,7 @@ function CommunicationPortal({
   const createPost = async (e: FormEvent) => {
     e.preventDefault();
     try {
-      await api("/communication/posts", "POST", { title, content }, token);
-      setTitle("");
+      await api("/communication/posts", "POST", { content }, token);
       setContent("");
       setPostComposerOpen(false);
       load();
@@ -1965,9 +1963,8 @@ function CommunicationPortal({
   const updatePost = async (e: FormEvent, postId: string) => {
     e.preventDefault();
     try {
-      await api(`/communication/posts/${postId}`, "PATCH", { title, content }, token);
+      await api(`/communication/posts/${postId}`, "PATCH", { content }, token);
       setEditingPostId("");
-      setTitle("");
       setContent("");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not update post");
@@ -2062,18 +2059,20 @@ function CommunicationPortal({
         {communitySection === "posts" && <div className="feed-column">
           {role === "STUDENT" && (postComposerOpen ? (
             <form className="post-composer" onSubmit={createPost}>
-              <p className="composer-label">SHARE SOMETHING USEFUL</p>
-              <input
-                required
-                maxLength={120}
-                placeholder="Give your post a title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-              />
+              <div className="post-composer-heading">
+                <p className="composer-label">SHARE SOMETHING USEFUL</p>
+                <button
+                  type="button"
+                  className="post-composer-hide"
+                  onClick={() => setPostComposerOpen(false)}
+                >
+                  Hide
+                </button>
+              </div>
               <textarea
                 required
                 maxLength={2000}
-                placeholder="What would you like the community to know?"
+                placeholder="Write something useful for your library community..."
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
               />
@@ -2117,7 +2116,6 @@ function CommunicationPortal({
                       className="moderate-action edit-post-action"
                       onClick={() => {
                         setEditingPostId(post._id);
-                        setTitle(post.title);
                         setContent(post.content);
                       }}
                     >
@@ -2127,13 +2125,6 @@ function CommunicationPortal({
                 </div>
                 {editingPostId === post._id ? (
                   <form className="post-composer edit-post-composer" onSubmit={(event) => updatePost(event, post._id)}>
-                    <input
-                      required
-                      maxLength={120}
-                      aria-label="Edit post title"
-                      value={title}
-                      onChange={(event) => setTitle(event.target.value)}
-                    />
                     <textarea
                       required
                       maxLength={2000}
@@ -2148,7 +2139,6 @@ function CommunicationPortal({
                   </form>
                 ) : (
                   <>
-                    <h3>{post.title}</h3>
                     <p>{post.content}</p>
                   </>
                 )}

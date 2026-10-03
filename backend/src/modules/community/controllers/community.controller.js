@@ -12,10 +12,10 @@ router.get('/posts', allow('STUDENT', 'LIBRARIAN'), requireSeatAssignment, async
   res.json(await service.findPosts(req.user.libraryId, req.user.id));
 }));
 router.post('/posts', allow('STUDENT'), requireSeatAssignment, asyncHandler(async (req, res) => {
-  res.status(201).json(await service.createPost(req.user.libraryId, req.user.id, req.body.title, req.body.content));
+  res.status(201).json(await service.createPost(req.user.libraryId, req.user.id, req.body.content));
 }));
 router.patch('/posts/:id', allow('STUDENT'), requireSeatAssignment, asyncHandler(async (req, res) => {
-  res.json(await service.updatePost(req.user.libraryId, req.params.id, req.user.id, req.body.title, req.body.content));
+  res.json(await service.updatePost(req.user.libraryId, req.params.id, req.user.id, req.body.content));
 }));
 router.post('/posts/:id/comments', allow('STUDENT', 'LIBRARIAN'), requireSeatAssignment, asyncHandler(async (req, res) => {
   res.status(201).json(await service.addComment(req.user.libraryId, req.params.id, req.user.id, req.user.role, req.body.message));

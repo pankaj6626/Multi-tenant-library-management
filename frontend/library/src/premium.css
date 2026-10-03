@@ -7,6 +7,7 @@
   --auth-pink-soft: #fff1f2;
   --auth-pink-deep: #b85d6a;
   --button-press-pink: rgba(244, 174, 188, .62);
+  --footer-border: #c85b58;
 }
 
 :root[data-theme='dark'] {
@@ -14,6 +15,7 @@
   --auth-pink-soft: #3a292f;
   --auth-pink-deep: #ffb8c1;
   --button-press-pink: rgba(232, 139, 157, .48);
+  --footer-border: #df817d;
 }
 
 button:active {
@@ -382,6 +384,10 @@ button:active {
 }
 
 .create-post-toggle { justify-self: start; }
+.post-composer-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.post-composer-heading .composer-label { margin: 0; }
+.post-composer-hide { padding: 4px 7px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--muted); font-size: 10px; font-weight: 700; }
+.post-composer-hide:hover { border-color: var(--brand); color: var(--brand); }
 
 .concern-feed {
   height: 700px;
@@ -479,12 +485,14 @@ button:active {
 .like-button.liked .like-icon { color: #e5484d; font-weight: 700; }
 .comment.librarian-comment { background: color-mix(in srgb, var(--accent) 8%, transparent); }
 .comment-role { display: inline-block; margin-left: 7px; padding: 2px 5px; border-radius: 4px; background: color-mix(in srgb, var(--accent) 24%, var(--surface)); color: var(--brand-dark); font-size: 8px; font-weight: 700; vertical-align: 1px; }
+.post-card > p { margin-top: 10px; font-size: 15px; line-height: 1.65; }
 .edit-post-action { margin-left: auto; }
 .edit-post-composer { margin-top: 16px; }
 .edit-post-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 
 .librarian-footer-tabs { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .student-footer-tabs { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.librarian-footer-tabs { border-color: var(--footer-border); }
 .expense-form { display: grid; gap: 18px; }
 .expense-month-field { display: grid; gap: 7px; max-width: 220px; color: var(--muted); font-size: 12px; font-weight: 700; }
 .expense-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 13px; }

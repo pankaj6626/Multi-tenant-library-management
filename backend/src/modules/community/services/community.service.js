@@ -18,25 +18,24 @@ const findPosts = async (library, studentId) => {
   }));
 };
 
-const createPost = async (library, author, title, content) => {
-  const post = await repository.createPost({ library, author, title, content });
+const createPost = async (library, author, content) => {
+  if (typeof content !== 'string' || !content.trim() || content.trim().length > 2000) {
+    throw new HttpError('Post content is required and must be 2000 characters or fewer', 400, 'INVALID_POST_CONTENT');
+  }
+  const post = await repository.createPost({ library, author, content: content.trim() });
   await redis.del(`community:posts:${library}`);
   const postView = await repository.findPostView({ _id: post._id, library });
   emitToLibrary(library, 'post:created', postView.toObject());
   return post;
 };
 
-const updatePost = async (library, postId, author, title, content) => {
-  if (typeof title !== 'string' || !title.trim() || title.trim().length > 120) {
-    throw new HttpError('Post title is required and must be 120 characters or fewer', 400, 'INVALID_POST_TITLE');
-  }
+const updatePost = async (library, postId, author, content) => {
   if (typeof content !== 'string' || !content.trim() || content.trim().length > 2000) {
     throw new HttpError('Post content is required and must be 2000 characters or fewer', 400, 'INVALID_POST_CONTENT');
   }
 
   const post = await repository.findPost({ _id: postId, library, author });
   if (!post) throw new HttpError('Post not found or you do not have permission to edit it', 404);
-  post.title = title.trim();
   post.content = content.trim();
   await repository.savePost(post);
   await redis.del(`community:posts:${library}`);
