@@ -2,6 +2,7 @@ import HttpError from '../../../common/exceptions/http-error.js';
 import redis from '../../../config/redis.js';
 import * as repository from '../repositories/community.repository.js';
 import studentRepository from '../../students/repositories/student.repository.js';
+import librarianRepository from '../../librarians/repositories/librarian.repository.js';
 import * as notificationService from '../../notifications/services/notification.service.js';
 import { emitToLibrary } from '../../../config/socket.js';
 
@@ -25,16 +26,40 @@ const createPost = async (library, author, title, content) => {
   return post;
 };
 
-const addComment = async (library, postId, author, message) => {
+const updatePost = async (library, postId, author, title, content) => {
+  if (typeof title !== 'string' || !title.trim() || title.trim().length > 120) {
+    throw new HttpError('Post title is required and must be 120 characters or fewer', 400, 'INVALID_POST_TITLE');
+  }
+  if (typeof content !== 'string' || !content.trim() || content.trim().length > 2000) {
+    throw new HttpError('Post content is required and must be 2000 characters or fewer', 400, 'INVALID_POST_CONTENT');
+  }
+
+  const post = await repository.findPost({ _id: postId, library, author });
+  if (!post) throw new HttpError('Post not found or you do not have permission to edit it', 404);
+  post.title = title.trim();
+  post.content = content.trim();
+  await repository.savePost(post);
+  await redis.del(`community:posts:${library}`);
+  const postView = await repository.findPostView({ _id: post._id, library });
+  emitToLibrary(library, 'post:updated', { post: postView.toObject(), change: 'post:edited' });
+  return postView;
+};
+
+const addComment = async (library, postId, author, authorRole, message) => {
   const post = await repository.findPost({ _id: postId, library });
   if (!post) throw new HttpError('Post not found', 404);
-  post.comments.push({ author, message });
+  post.comments.push({
+    author,
+    authorModel: authorRole === 'LIBRARIAN' ? 'Librarian' : 'Student',
+    message,
+  });
   const result = await repository.savePost(post);
   await redis.del(`community:posts:${library}`);
   const postView = await repository.findPostView({ _id: post._id, library });
   emitToLibrary(library, 'post:updated', { post: postView.toObject(), change: 'comment:created' });
   if (String(post.author) !== String(author)) {
-    const commenter = await studentRepository.findById(author);
+    const commenterRepository = authorRole === 'LIBRARIAN' ? librarianRepository : studentRepository;
+    const commenter = await commenterRepository.findById(author);
     const comment = post.comments[post.comments.length - 1];
     await notificationService.notify({
       recipient: post.author,
@@ -42,14 +67,14 @@ const addComment = async (library, postId, author, message) => {
       library,
       type: 'POST_COMMENTED',
       title: 'New comment on your post',
-      message: `${commenter?.name || 'A student'} commented on your post.`,
+      message: `${commenter?.name || (authorRole === 'LIBRARIAN' ? 'A librarian' : 'A student')} commented on your post.`,
       eventKey: `post-commented:${comment._id}`,
     });
   }
   return result;
 };
 
-const toggleLike = async (library, postId, studentId) => {
+const toggleLike = async (library, postId, studentId, actorRole) => {
   const post = await repository.findPost({ _id: postId, library });
   if (!post) throw new HttpError('Post not found', 404);
   const index = post.likes.findIndex((id) => String(id) === String(studentId));
@@ -66,15 +91,16 @@ const toggleLike = async (library, postId, studentId) => {
     liked,
   });
   if (liked && String(post.author) !== String(studentId)) {
-    const liker = await studentRepository.findById(studentId);
+    const likerRepository = actorRole === 'LIBRARIAN' ? librarianRepository : studentRepository;
+    const liker = await likerRepository.findById(studentId);
     await notificationService.notify({
       recipient: post.author,
       recipientRole: 'STUDENT',
       library,
       type: 'POST_LIKED',
       title: 'Someone liked your post',
-      message: `${liker?.name || 'A student'} liked your post.`,
-      eventKey: `post-liked:${postId}:${studentId}:${post.updatedAt?.getTime() || Date.now()}`,
+      message: `${liker?.name || (actorRole === 'LIBRARIAN' ? 'A librarian' : 'A student')} liked your post.`,
+      eventKey: `post-liked:${postId}:${actorRole}:${studentId}:${post.updatedAt?.getTime() || Date.now()}`,
     });
   }
   return { liked, likesCount: post.likes.length };
@@ -131,4 +157,4 @@ const deleteNotice = async (library, noticeId) => {
   emitToLibrary(library, 'notice:deleted', { noticeId });
 };
 
-export { findPosts, createPost, addComment, toggleLike, deletePost, deleteComment, findNotices, createNotice, deleteNotice };
+export { findPosts, createPost, updatePost, addComment, toggleLike, deletePost, deleteComment, findNotices, createNotice, deleteNotice };

@@ -3,7 +3,7 @@ const createSeatCache = (redis) => {
 
   return {
     get: (libraryId) => redis.get(keyFor(libraryId)),
-    set: (libraryId, value) => redis.set(keyFor(libraryId), value, 15),
+    set: (libraryId, value) => redis.set(keyFor(libraryId), value, 300),
     invalidate: (libraryId) => redis.del(keyFor(libraryId)),
   };
 };

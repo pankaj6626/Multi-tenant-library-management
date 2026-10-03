@@ -68,6 +68,8 @@ Authenticated students and librarians can use `GET /api/v1/notifications` to loa
 
 Monthly expenses are scoped to the authenticated librarian's library. Each month stores Electricity, Rent, Internet, Cleaning, Staff salary, Water, Maintenance, Furniture, and Others; the API calculates the total and allows the same library/month record to be updated.
 
+`GET /api/v1/fees/pending` caches each library's student/payment source snapshot in Redis for up to 24 hours. Overdue status is recalculated on every request so students crossing the 30-day threshold are reflected without waiting for cache expiry. The snapshot is invalidated when a student registers or is removed, or when a payment is recorded. If Redis is unavailable, the endpoint falls back to MongoDB.
+
 Approving the first librarian automatically creates the requested number of seats. Each seat accepts one student in `SHIFT_1` and one in `SHIFT_2`. A fee is overdue when no payment has been recorded in the previous 30 days (or the student registered more than 30 days ago without a payment).
 
 Releasing a seat assignment records the student's name, email, mobile number, joining date, and leaving date in the `StudentHistory` collection. A librarian can also remove an unassigned registration with `DELETE /api/v1/libraries/students/:id`; it is archived before deletion, while assigned students must be released from their seat first. Students without an assignment cannot access community features or create concerns; the backend enforces this with the seat-assignment guard.

@@ -1,6 +1,6 @@
 const createSeatStatusService = ({ feeRepository, concernRepository }) => {
   const overdue = (student, payment) => ({
-    status: (payment ? payment.paidAt : student.createdAt) < new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+    status: new Date(payment ? payment.paidAt : student.createdAt) < new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
       ? 'OVERDUE'
       : 'PAID',
     lastPaymentDate: payment?.paidAt || null,

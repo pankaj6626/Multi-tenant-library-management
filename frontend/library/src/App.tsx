@@ -5,6 +5,15 @@ import "./premium.css";
 
 const API = (import.meta.env.VITE_API_URL || "/api/v1").replace(/\/$/, "");
 const SOCKET_URL = (import.meta.env.VITE_SOCKET_URL || API.replace(/\/api\/v1$/, "")).replace(/\/$/, "");
+const getAccessTokenUserId = (token: string) => {
+  try {
+    const encodedPayload = token.split(".")[0].replace(/-/g, "+").replace(/_/g, "/");
+    const paddedPayload = encodedPayload.padEnd(Math.ceil(encodedPayload.length / 4) * 4, "=");
+    return JSON.parse(atob(paddedPayload)).id as string;
+  } catch {
+    return "";
+  }
+};
 type View =
   | "home"
   | "library"
@@ -1881,6 +1890,9 @@ function CommunicationPortal({
   token: string;
   role: "STUDENT" | "LIBRARIAN";
 }) {
+  const [communitySection, setCommunitySection] = useState<"notices" | "posts">("notices");
+  const [postComposerOpen, setPostComposerOpen] = useState(false);
+  const [editingPostId, setEditingPostId] = useState("");
   const [posts, setPosts] = useState<any[]>([]),
     [notices, setNotices] = useState<any[]>([]),
     [title, setTitle] = useState(""),
@@ -1944,9 +1956,21 @@ function CommunicationPortal({
       await api("/communication/posts", "POST", { title, content }, token);
       setTitle("");
       setContent("");
+      setPostComposerOpen(false);
       load();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not publish post");
+    }
+  };
+  const updatePost = async (e: FormEvent, postId: string) => {
+    e.preventDefault();
+    try {
+      await api(`/communication/posts/${postId}`, "PATCH", { title, content }, token);
+      setEditingPostId("");
+      setTitle("");
+      setContent("");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not update post");
     }
   };
   const addComment = async (e: FormEvent, postId: string) => {
@@ -2014,9 +2038,29 @@ function CommunicationPortal({
         </div>
         <span className="community-mark">✦</span>
       </div>
+      <div className="community-tabs" role="tablist" aria-label="Community sections">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={communitySection === "notices"}
+          className={communitySection === "notices" ? "active" : ""}
+          onClick={() => setCommunitySection("notices")}
+        >
+          <span aria-hidden="true">⌁</span> Notice board
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={communitySection === "posts"}
+          className={communitySection === "posts" ? "active" : ""}
+          onClick={() => setCommunitySection("posts")}
+        >
+          <span aria-hidden="true">✦</span> Posts
+        </button>
+      </div>
       <div className="communication-grid">
-        <div className="feed-column">
-          {role === "STUDENT" && (
+        {communitySection === "posts" && <div className="feed-column">
+          {role === "STUDENT" && (postComposerOpen ? (
             <form className="post-composer" onSubmit={createPost}>
               <p className="composer-label">SHARE SOMETHING USEFUL</p>
               <input
@@ -2037,7 +2081,15 @@ function CommunicationPortal({
                 Publish post <span>↗</span>
               </button>
             </form>
-          )}
+          ) : (
+            <button
+              type="button"
+              className="outline small create-post-toggle"
+              onClick={() => setPostComposerOpen(true)}
+            >
+              {posts.length ? "Create a post" : "Create your first post"}<span>＋</span>
+            </button>
+          ))}
           <div className="post-feed" aria-label="Community posts">
             {posts.length ? (
               posts.map((post) => (
@@ -2060,9 +2112,46 @@ function CommunicationPortal({
                       Delete post
                     </button>
                   )}
+                  {role === "STUDENT" && String(post.author?._id || post.author?.id) === getAccessTokenUserId(token) && (
+                    <button
+                      className="moderate-action edit-post-action"
+                      onClick={() => {
+                        setEditingPostId(post._id);
+                        setTitle(post.title);
+                        setContent(post.content);
+                      }}
+                    >
+                      Edit post
+                    </button>
+                  )}
                 </div>
-                <h3>{post.title}</h3>
-                <p>{post.content}</p>
+                {editingPostId === post._id ? (
+                  <form className="post-composer edit-post-composer" onSubmit={(event) => updatePost(event, post._id)}>
+                    <input
+                      required
+                      maxLength={120}
+                      aria-label="Edit post title"
+                      value={title}
+                      onChange={(event) => setTitle(event.target.value)}
+                    />
+                    <textarea
+                      required
+                      maxLength={2000}
+                      aria-label="Edit post content"
+                      value={content}
+                      onChange={(event) => setContent(event.target.value)}
+                    />
+                    <div className="edit-post-actions">
+                      <button className="primary small">Save changes</button>
+                      <button type="button" className="outline small" onClick={() => setEditingPostId("")}>Cancel</button>
+                    </div>
+                  </form>
+                ) : (
+                  <>
+                    <h3>{post.title}</h3>
+                    <p>{post.content}</p>
+                  </>
+                )}
                 <div className="post-actions">
                   <button
                     className={`like-button ${post.likedByMe ? "liked" : ""}`}
@@ -2084,13 +2173,14 @@ function CommunicationPortal({
                 </div>
                 {expandedComments[post._id] && <div className="comments">
                   {post.comments?.map((comment: any) => (
-                    <div className="comment" key={comment._id}>
+                    <div className={`comment ${comment.authorModel === "Librarian" ? "librarian-comment" : ""}`} key={comment._id}>
                       <span className="avatar tiny">
                         {comment.author?.name?.charAt(0) || "S"}
                       </span>
                       <p>
                         <strong>
                           {comment.author?.name || "Student"}
+                          {comment.authorModel === "Librarian" && <span className="comment-role">LIBRARIAN</span>}
                           <small
                             className="comment-relative-time"
                             title={formatDateTime(comment.createdAt)}
@@ -2115,14 +2205,14 @@ function CommunicationPortal({
                       )}
                     </div>
                   ))}
-                  {role === "STUDENT" && (
+                  {(role === "STUDENT" || role === "LIBRARIAN") && (
                     <form
                       className="comment-form"
                       onSubmit={(e) => addComment(e, post._id)}
                     >
                       <input
                         required
-                        placeholder="Add a thoughtful comment..."
+                        placeholder={role === "LIBRARIAN" ? "Reply as the librarian..." : "Add a thoughtful comment..."}
                         value={comments[post._id] || ""}
                         onChange={(e) =>
                           setComments({
@@ -2144,8 +2234,8 @@ function CommunicationPortal({
               </div>
             )}
           </div>
-        </div>
-        <aside className="notice-board">
+        </div>}
+        {communitySection === "notices" && <aside className="notice-board">
           <div className="notice-board-heading">
             <div>
               <p className="eyebrow">NOTICE BOARD</p>
@@ -2201,7 +2291,7 @@ function CommunicationPortal({
               </button>
             </form>
           )}
-        </aside>
+        </aside>}
       </div>
       {error && <p className="error">{error}</p>}
     </section>

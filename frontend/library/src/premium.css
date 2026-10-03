@@ -349,6 +349,40 @@ button:active {
 
 .post-feed .post-card { min-width: 0; }
 
+.community-tabs {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 20px;
+  padding: 5px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-soft);
+}
+
+.community-tabs button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.community-tabs button.active {
+  border-color: var(--line);
+  background: var(--surface);
+  color: var(--brand);
+  box-shadow: 0 3px 10px rgba(23, 55, 42, .08);
+}
+
+.create-post-toggle { justify-self: start; }
+
 .concern-feed {
   height: 700px;
   max-height: calc(100vh - 300px);
@@ -443,6 +477,11 @@ button:active {
 .comments-icon { margin-right: 3px; font-size: 14px; line-height: 1; vertical-align: -1px; }
 .like-button .like-icon { margin-left: 0; font-size: 19px; line-height: 1; }
 .like-button.liked .like-icon { color: #e5484d; font-weight: 700; }
+.comment.librarian-comment { background: color-mix(in srgb, var(--accent) 8%, transparent); }
+.comment-role { display: inline-block; margin-left: 7px; padding: 2px 5px; border-radius: 4px; background: color-mix(in srgb, var(--accent) 24%, var(--surface)); color: var(--brand-dark); font-size: 8px; font-weight: 700; vertical-align: 1px; }
+.edit-post-action { margin-left: auto; }
+.edit-post-composer { margin-top: 16px; }
+.edit-post-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 
 .librarian-footer-tabs { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .student-footer-tabs { grid-template-columns: repeat(5, minmax(0, 1fr)); }
@@ -459,6 +498,8 @@ button:active {
 .expense-breakdown ul { display: grid; gap: 4px; margin: 8px 0 4px; padding-left: 17px; color: var(--muted); font-size: 11px; }
 
 @media(max-width:620px) {
+  .community-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .community-tabs button { min-width: 0; padding: 0 8px; }
   .study-tools { grid-template-columns: 1fr; }
   .goal-form { align-items: stretch; flex-direction: column; }
   .goal-form input[type="date"], .goal-form button { width: 100%; max-width: none; }

@@ -5,6 +5,7 @@ import studentRepository from '../../students/repositories/student.repository.js
 import librarianRepository from '../../librarians/repositories/librarian.repository.js';
 import * as notificationService from '../../notifications/services/notification.service.js';
 import feeRepository from '../repositories/fee.repository.js';
+import * as pendingFeeCache from './pending-fee-cache.js';
 
 const record = async (libraryId, studentId, amount, paidAt, recordedBy, paymentMethod = 'CASH') => {
   if (!['UPI', 'CASH'].includes(paymentMethod)) {
@@ -24,6 +25,7 @@ const record = async (libraryId, studentId, amount, paidAt, recordedBy, paymentM
     paymentMethod,
     recordedBy,
   });
+  await pendingFeeCache.invalidate(libraryId);
   await redis.del(`library:seats:${libraryId}`);
   await redis.del(`library:students:${libraryId}`);
   await notificationService.notify({
@@ -39,10 +41,29 @@ const record = async (libraryId, studentId, amount, paidAt, recordedBy, paymentM
 };
 
 const pending = async (libraryId) => {
-  const [students, payments] = await Promise.all([
-    studentRepository.findByLibrary(libraryId),
-    feeRepository.findByLibrary(libraryId),
-  ]);
+  let snapshot = await pendingFeeCache.get(libraryId);
+  if (!snapshot) {
+    const [students, payments] = await Promise.all([
+      studentRepository.findByLibrary(libraryId),
+      feeRepository.findByLibrary(libraryId),
+    ]);
+    snapshot = {
+      students: students.map((student) => {
+        const { passwordHash, ...safeStudent } = student.toObject();
+        return {
+          ...safeStudent,
+          createdAt: new Date(safeStudent.createdAt).toISOString(),
+        };
+      }),
+      payments: payments.map((payment) => ({
+        student: String(payment.student),
+        paidAt: new Date(payment.paidAt).toISOString(),
+      })),
+    };
+    await pendingFeeCache.set(libraryId, snapshot);
+  }
+
+  const { students, payments } = snapshot;
   const latestPaymentByStudent = new Map();
   payments.forEach((payment) => {
     if (!latestPaymentByStudent.has(String(payment.student)))

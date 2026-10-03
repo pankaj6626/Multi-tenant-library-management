@@ -14,11 +14,14 @@ router.get('/posts', allow('STUDENT', 'LIBRARIAN'), requireSeatAssignment, async
 router.post('/posts', allow('STUDENT'), requireSeatAssignment, asyncHandler(async (req, res) => {
   res.status(201).json(await service.createPost(req.user.libraryId, req.user.id, req.body.title, req.body.content));
 }));
-router.post('/posts/:id/comments', allow('STUDENT'), requireSeatAssignment, asyncHandler(async (req, res) => {
-  res.status(201).json(await service.addComment(req.user.libraryId, req.params.id, req.user.id, req.body.message));
+router.patch('/posts/:id', allow('STUDENT'), requireSeatAssignment, asyncHandler(async (req, res) => {
+  res.json(await service.updatePost(req.user.libraryId, req.params.id, req.user.id, req.body.title, req.body.content));
 }));
-router.patch('/posts/:id/like', allow('STUDENT'), requireSeatAssignment, asyncHandler(async (req, res) => {
-  res.json(await service.toggleLike(req.user.libraryId, req.params.id, req.user.id));
+router.post('/posts/:id/comments', allow('STUDENT', 'LIBRARIAN'), requireSeatAssignment, asyncHandler(async (req, res) => {
+  res.status(201).json(await service.addComment(req.user.libraryId, req.params.id, req.user.id, req.user.role, req.body.message));
+}));
+router.patch('/posts/:id/like', allow('STUDENT', 'LIBRARIAN'), requireSeatAssignment, asyncHandler(async (req, res) => {
+  res.json(await service.toggleLike(req.user.libraryId, req.params.id, req.user.id, req.user.role));
 }));
 router.delete('/posts/:id', allow('LIBRARIAN'), asyncHandler(async (req, res) => {
   await service.deletePost(req.user.libraryId, req.params.id);

@@ -9,6 +9,7 @@ import * as notificationService from '../../notifications/services/notification.
 import seatRepository from '../../seats/repositories/seat.repository.js';
 import studentRepository from '../repositories/student.repository.js';
 import * as studentHistoryRepository from '../repositories/student-history.repository.js';
+import { invalidate as invalidatePendingFeeCache } from '../../fees/services/pending-fee-cache.js';
 
 const register = async ({ libraryCode, name, email, password, confirmPassword, mobile }) => {
   if (password !== confirmPassword) {
@@ -16,6 +17,7 @@ const register = async ({ libraryCode, name, email, password, confirmPassword, m
   }
   const library = await libraryService.findApprovedByCode(libraryCode);
   const student = await studentRepository.create({ library: library._id, name, email, passwordHash: hashPassword(password), mobile });
+  await invalidatePendingFeeCache(library._id);
   await redis.del(`library:students:${library._id}`);
   const librarians = await librarianRepository.findByLibrary(library._id);
   await notificationService.notifyMany(librarians.map(({ _id: recipient }) => recipient), {
@@ -109,6 +111,7 @@ const removeUnassigned = async (libraryId, studentId) => {
     leftAt: new Date(),
   });
   await studentRepository.deleteOne({ _id: studentId, library: libraryId });
+  await invalidatePendingFeeCache(libraryId);
   await redis.del(`library:students:${libraryId}`);
   return { removed: true };
 };
